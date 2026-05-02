@@ -32,11 +32,10 @@ Hands stay on the laptop trackpad / one click at a time. No menu diving, no scro
 | 0:55–1:10 | Compaction timeline collapses raw events into squad summaries | *"In a normal radio workflow, the platoon leader hears all of this. With TacNet, each squad leader's phone compacts before forwarding."* | Compaction-timeline panel: rows visibly collapse. ~12 raw events → 3 squad summaries. |
 | 1:10–1:25 | Commander SITREP appears center stage | *"The commander sees one SITREP — what changed, what's at risk, what to look at next."* | SITREP card at center; SITREP-delta panel highlights "what changed since last step." |
 | 1:25–1:35 | Click one SITREP line → evidence drawer opens | *"Every line is traceable to the raw reports that produced it. No black box."* | Side drawer slides in showing the contributing raw events. |
-| 1:35–1:50 | Toggle **bandwidth degraded** mode → step replay once more | *"Now bandwidth drops by half. Most C2 systems would go blind. TacNet shrinks the summary, keeps the picture."* | Bandwidth toggle visibly flips. Event stream shows fewer raw events arriving; SITREP regenerates with smaller text but same recommendation. |
-| 1:50–2:00 | Pause on final state | *(silence — let the picture land for one full beat)* | Final composed view: map + mesh tree + SITREP + delta panel + evidence drawer all visible. |
-| 2:00–2:05 | Hand off to close | *"This is C2 that degrades gracefully instead of going blind."* | Same final state held. |
+| 1:35–1:55 | Toggle **bandwidth degraded** mode → step replay once more | *"Now bandwidth drops by half. Most C2 systems would go blind. TacNet shrinks the summary — keeps the picture."* (Then ~5s of silence so the audience reads the new SITREP next to the old one.) | Bandwidth toggle visibly flips. Event stream shows fewer raw events arriving; SITREP regenerates with smaller text but same recommendation. Hold both versions side by side if the layout supports it. |
+| 1:55–2:05 | Hold final composed state; hand off to close | *(brief silence, then:)* *"This is C2 that degrades gracefully instead of going blind."* | Final composed view: map + mesh tree + SITREP + delta panel + evidence drawer all visible. |
 
-**Words spoken during demo:** ~95. **Pace:** ~63 wpm — calm, deliberate. Faster than this and the audience can't read the screen.
+**Words spoken during demo:** ~95. **Pace:** ~63 wpm — calm, deliberate. The 5s silence inside the bandwidth-toggle beat is intentional — the hero beat needs a moment to land.
 
 ---
 
