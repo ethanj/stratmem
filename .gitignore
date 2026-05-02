@@ -1,1 +1,23 @@
 localdocs/
+
+# macOS
+.DS_Store
+._*
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Claude Code (project settings.json is shared, local overrides are not)
+.claude/settings.local.json
+
+# Personal notes
+James_notes/
