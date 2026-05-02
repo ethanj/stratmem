@@ -1,0 +1,200 @@
+/* styles/dashboard.css */
+
+.dashboard-shell {
+  width: 100%;
+  height: 100dvh;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-rows: 68px minmax(0, 1fr);
+  gap: 8px;
+  overflow: hidden;
+}
+
+/*
+  Desktop command-center layout.
+  Optimized for fullscreen / 16:9 hackathon demo.
+*/
+.dashboard-grid {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+
+  grid-template-columns:
+    minmax(320px, 0.96fr)
+    minmax(370px, 1.12fr)
+    minmax(260px, 0.82fr)
+    minmax(260px, 0.82fr);
+
+  grid-template-rows: minmax(0, 1.52fr) minmax(0, 0.72fr);
+
+  grid-template-areas:
+    "events signals righttop righttop"
+    "events map     map      assets";
+
+  gap: 8px;
+}
+
+.dashboard-area {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.event-area {
+  grid-area: events;
+}
+
+.signal-area {
+  grid-area: signals;
+}
+
+.right-top-area {
+  grid-area: righttop;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  gap: 8px;
+}
+
+.map-area {
+  grid-area: map;
+}
+
+.asset-area {
+  grid-area: assets;
+}
+
+.dashboard-area > .panel,
+.right-top-area > .panel {
+  width: 100%;
+  height: 100%;
+}
+
+/* Panel base */
+.panel {
+  min-width: 0;
+  min-height: 0;
+  background:
+    linear-gradient(180deg, rgba(15, 28, 44, 0.96), rgba(5, 12, 20, 0.96));
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 20px rgba(56, 189, 248, 0.035),
+    0 0 18px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.panel-header {
+  height: 28px;
+  flex: 0 0 28px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.16);
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: #e8f3ff;
+}
+
+/* Shorter laptop/browser height */
+@media (max-height: 820px) and (min-width: 981px) {
+  .dashboard-shell {
+    grid-template-rows: 64px minmax(0, 1fr);
+    gap: 7px;
+    padding: 7px 9px;
+  }
+
+  .dashboard-grid {
+    gap: 7px;
+    grid-template-rows: minmax(0, 1.48fr) minmax(0, 0.68fr);
+  }
+
+  .right-top-area {
+    gap: 7px;
+    grid-template-rows: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  }
+
+  .panel-header {
+    height: 26px;
+    flex-basis: 26px;
+  }
+
+  .panel-header h2 {
+    font-size: 11px;
+  }
+}
+
+/* Very short desktop height */
+@media (max-height: 720px) and (min-width: 981px) {
+  .dashboard-shell {
+    grid-template-rows: 60px minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .dashboard-grid {
+    gap: 6px;
+    grid-template-rows: minmax(0, 1.45fr) minmax(0, 0.62fr);
+  }
+
+  .right-top-area {
+    gap: 6px;
+    grid-template-rows: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  }
+
+  .panel-header {
+    height: 24px;
+    flex-basis: 24px;
+    padding: 0 9px;
+  }
+
+  .panel-header h2 {
+    font-size: 10.5px;
+  }
+}
+
+/* Narrow layout: only here do we allow page scroll. */
+@media (max-width: 980px) {
+  .dashboard-shell {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-rows: auto auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .dashboard-grid {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "righttop"
+      "events"
+      "signals"
+      "map"
+      "assets";
+    align-items: stretch;
+  }
+
+  .right-top-area {
+    grid-template-rows: auto auto;
+  }
+
+  .event-area,
+  .signal-area,
+  .map-area,
+  .asset-area {
+    min-height: 320px;
+  }
+
+  .map-area {
+    min-height: 420px;
+  }
+}

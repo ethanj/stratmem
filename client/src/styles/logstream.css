@@ -1,0 +1,687 @@
+/* styles/logstream.css */
+
+/* =========================================================
+   Event Stream Panel
+========================================================= */
+
+.event-stream-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================
+   Header Filter Control
+========================================================= */
+
+.event-filter-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.event-filter-control span {
+  color: var(--muted);
+}
+
+.event-filter-control select {
+  max-width: 132px;
+  border: 1px solid rgba(84, 139, 184, 0.24);
+  border-radius: 5px;
+  background: rgba(4, 10, 18, 0.48);
+  color: #b9d8ee;
+  padding: 3px 22px 3px 7px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  outline: none;
+  cursor: pointer;
+}
+
+.event-filter-control select:hover,
+.event-filter-control select:focus {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(6, 19, 31, 0.92);
+}
+
+/* =========================================================
+   Compact Event Stream Header
+========================================================= */
+
+.event-table-head {
+  display: grid;
+  grid-template-columns: 72px 82px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 10px 6px 34px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+/* =========================================================
+   Compact Event Stream Body
+========================================================= */
+
+.event-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.event-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px 82px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-height: 39px;
+  padding: 7px 10px 7px 34px;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.06);
+  background: transparent;
+  font-size: 12px;
+}
+
+.event-dot {
+  position: absolute;
+  left: 16px;
+  top: 13px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.event-time {
+  color: #a9bbca;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.28;
+}
+
+.event-message {
+  min-width: 0;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   Source Pills
+   Pill = source/system identity
+========================================================= */
+
+.source-pill {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 66px;
+  height: 24px;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.source-pill.auth {
+  color: #7dd3fc;
+  background: rgba(14, 165, 233, 0.16);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.source-pill.edr {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.source-pill.uas {
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.14);
+  border: 1px solid rgba(251, 146, 60, 0.35);
+}
+
+.source-pill.ais {
+  color: var(--cyan);
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+}
+
+.source-pill.net {
+  color: #c084fc;
+  background: rgba(126, 34, 206, 0.16);
+  border: 1px solid rgba(192, 132, 252, 0.3);
+}
+
+.source-pill.fusion {
+  color: var(--red);
+  background: rgba(255, 64, 64, 0.12);
+  border: 1px solid rgba(255, 64, 64, 0.35);
+}
+
+.source-pill.siem,
+.source-pill.mde,
+.source-pill.sys {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.09);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+/* =========================================================
+   Event Semantic Tones
+   Dot/message = event meaning
+   Source pill = source identity
+   Time = neutral chronology
+========================================================= */
+
+/* Telemetry / healthy background feed */
+.event-row.telemetry .event-dot {
+  color: var(--green);
+  background: var(--green);
+  opacity: 0.82;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.45);
+}
+
+.event-row.telemetry .event-message {
+  color: #8ba5bb;
+}
+
+/* Normal benign activity */
+.event-row.normal .event-dot {
+  color: #9bdcff;
+  background: #9bdcff;
+}
+
+.event-row.normal .event-message {
+  color: #9bdcff;
+}
+
+/* Auth failure / threat */
+.event-row.auth-failure .event-dot {
+  color: var(--red);
+  background: var(--red);
+}
+
+.event-row.auth-failure .event-message {
+  color: var(--red);
+}
+
+/* Anomaly / suspicious activity */
+.event-row.anomaly .event-dot {
+  color: var(--yellow);
+  background: var(--yellow);
+}
+
+.event-row.anomaly .event-message {
+  color: var(--yellow);
+}
+
+/* Lateral movement / privilege activity */
+.event-row.lateral .event-dot,
+.event-row.privilege .event-dot {
+  color: #4ade80;
+  background: #4ade80;
+}
+
+.event-row.lateral .event-message,
+.event-row.privilege .event-message {
+  color: #4ade80;
+}
+
+/* Data exfiltration */
+.event-row.exfil .event-dot {
+  color: #c084fc;
+  background: #c084fc;
+}
+
+.event-row.exfil .event-message {
+  color: #c084fc;
+}
+
+/* Physical drone activity */
+.event-row.drone .event-dot {
+  color: var(--orange);
+  background: var(--orange);
+}
+
+.event-row.drone .event-message {
+  color: var(--orange);
+}
+
+/* AIS / OSINT anomaly */
+.event-row.ais .event-dot {
+  color: var(--cyan);
+  background: var(--cyan);
+}
+
+.event-row.ais .event-message {
+  color: var(--cyan);
+}
+
+/* Fallback */
+.event-row.unknown .event-dot {
+  color: #cbd5e1;
+  background: #cbd5e1;
+}
+
+.event-row.unknown .event-message {
+  color: #cbd5e1;
+}
+
+/* =========================================================
+   Focused Evidence Rows
+   Triggered by clicking active signals in Signal Breakdown
+   Full row glow, no overlay, no expansion.
+========================================================= */
+
+.event-row.focused {
+  background: rgba(56, 189, 248, 0.055);
+  border-bottom-color: rgba(56, 189, 248, 0.34);
+  animation: focusedRowGlow 1.6s ease-in-out infinite;
+}
+
+.event-row.focused .event-dot {
+  box-shadow:
+    0 0 8px currentColor,
+    0 0 18px currentColor,
+    0 0 26px rgba(56, 189, 248, 0.35);
+  animation: focusedDotPulse 900ms ease-in-out infinite;
+}
+
+@keyframes focusedRowGlow {
+  0%,
+  100% {
+    background: rgba(56, 189, 248, 0.035);
+  }
+
+  50% {
+    background: rgba(56, 189, 248, 0.085);
+  }
+}
+
+@keyframes focusedDotPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.82;
+  }
+
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+
+/* =========================================================
+   Empty State
+========================================================= */
+
+.event-empty-state {
+  margin: 14px 12px;
+  padding: 14px;
+  border: 1px dashed rgba(84, 139, 184, 0.22);
+  border-radius: 7px;
+  background: rgba(4, 10, 18, 0.28);
+  color: var(--muted);
+}
+
+.event-empty-state strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.event-empty-state span {
+  display: block;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* =========================================================
+   Full Log Button
+========================================================= */
+
+.view-log-btn {
+  flex: 0 0 38px;
+  height: 38px;
+  margin: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  background: rgba(56, 189, 248, 0.05);
+  color: #9bdcff;
+  border-radius: 5px;
+  cursor: pointer;
+  transition:
+    filter 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.view-log-btn:hover {
+  filter: brightness(1.14);
+  border-color: rgba(56, 189, 248, 0.42);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+/* =========================================================
+   Full Event Log Modal
+========================================================= */
+
+.log-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at center, rgba(56, 189, 248, 0.08), transparent 42%),
+    rgba(0, 0, 0, 0.84);
+}
+
+.log-modal {
+  width: min(1180px, 94vw);
+  height: min(760px, 88vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(15, 28, 44, 0.98), rgba(5, 12, 20, 0.99));
+  box-shadow:
+    0 0 80px rgba(0, 0, 0, 0.82),
+    inset 0 0 24px rgba(56, 189, 248, 0.05);
+}
+
+.log-modal-header {
+  flex: 0 0 54px;
+  height: 54px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.2);
+  background: rgba(10, 22, 36, 0.96);
+}
+
+.log-modal-header h2 {
+  margin: 0;
+  color: #e8f3ff;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.log-modal-header span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.log-modal-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 7px;
+  background: rgba(56, 189, 248, 0.08);
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.log-modal-close:hover {
+  filter: brightness(1.18);
+}
+
+/* =========================================================
+   Full Event Log Modal Filter Chips
+========================================================= */
+
+.log-modal-filter-row {
+  flex: 0 0 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.14);
+  background: rgba(4, 10, 18, 0.34);
+}
+
+.log-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  border: 1px solid rgba(84, 139, 184, 0.28);
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.045);
+  color: #9bdcff;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.log-filter-chip span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  font-size: 9px;
+}
+
+.log-filter-chip.active {
+  border-color: rgba(56, 189, 248, 0.65);
+  background: rgba(56, 189, 248, 0.14);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.1);
+}
+
+/* =========================================================
+   Full Event Log Table
+========================================================= */
+
+.log-modal-table-head,
+.log-modal-row {
+  display: grid;
+  grid-template-columns:
+    92px
+    92px
+    112px
+    minmax(180px, 0.75fr)
+    minmax(320px, 1.45fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.log-modal-table-head {
+  flex: 0 0 34px;
+  height: 34px;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.14);
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.log-modal-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 18px 16px;
+}
+
+.log-modal-row {
+  position: relative;
+  min-height: 38px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.08);
+  font-size: 12px;
+}
+
+.log-modal-time {
+  color: #a9bbca;
+  font-variant-numeric: tabular-nums;
+}
+
+.log-modal-label {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.log-modal-label.telemetry {
+  color: #7f91a8;
+}
+
+.log-modal-label.normal {
+  color: #7dd3fc;
+}
+
+.log-modal-label.auth-failure {
+  color: var(--red);
+}
+
+.log-modal-label.anomaly {
+  color: var(--yellow);
+}
+
+.log-modal-label.lateral,
+.log-modal-label.privilege {
+  color: #4ade80;
+}
+
+.log-modal-label.exfil {
+  color: #c084fc;
+}
+
+.log-modal-label.drone {
+  color: var(--orange);
+}
+
+.log-modal-label.ais {
+  color: var(--cyan);
+}
+
+.log-modal-label.unknown {
+  color: var(--muted);
+}
+
+.log-modal-type {
+  min-width: 0;
+  color: #8ba5bb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-modal-message {
+  min-width: 0;
+  color: #dbeafe;
+  overflow-wrap: anywhere;
+}
+
+.log-modal-row.telemetry .log-modal-message {
+  color: #9aacbd;
+}
+
+.log-modal-row.normal .log-modal-message {
+  color: #9bdcff;
+}
+
+.log-modal-row.auth-failure .log-modal-message {
+  color: var(--red);
+}
+
+.log-modal-row.anomaly .log-modal-message {
+  color: var(--yellow);
+}
+
+.log-modal-row.lateral .log-modal-message,
+.log-modal-row.privilege .log-modal-message {
+  color: #4ade80;
+}
+
+.log-modal-row.exfil .log-modal-message {
+  color: #c084fc;
+}
+
+.log-modal-row.drone .log-modal-message {
+  color: var(--orange);
+}
+
+.log-modal-row.ais .log-modal-message {
+  color: var(--cyan);
+}
+
+/* Modal focused evidence row */
+.log-modal-row.focused {
+  background: rgba(56, 189, 248, 0.055);
+  border-bottom-color: rgba(56, 189, 248, 0.34);
+  animation: focusedRowGlow 1.6s ease-in-out infinite;
+}
+
+.log-modal-empty {
+  padding: 28px 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* =========================================================
+   Responsive Modal
+========================================================= */
+
+@media (max-width: 900px) {
+  .log-modal-table-head,
+  .log-modal-row {
+    grid-template-columns: 82px 82px 96px minmax(0, 1fr);
+  }
+
+  .log-modal-table-head span:nth-child(4),
+  .log-modal-row .log-modal-type {
+    display: none;
+  }
+
+  .event-filter-control select {
+    max-width: 112px;
+  }
+}
+
+@media (max-width: 640px) {
+  .log-modal-backdrop {
+    padding: 10px;
+  }
+
+  .log-modal {
+    width: 96vw;
+    height: 92vh;
+  }
+
+  .log-modal-filter-row {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .log-modal-table-head,
+  .log-modal-row {
+    grid-template-columns: 72px 72px minmax(0, 1fr);
+  }
+
+  .log-modal-table-head span:nth-child(3),
+  .log-modal-row .log-modal-label {
+    display: none;
+  }
+}
