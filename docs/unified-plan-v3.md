@@ -29,11 +29,14 @@ The OLD dashboard lives in a sibling repo. From this repo's root:
 
 ```bash
 cd "../voice-agents-hack/OLD CODE/dashboard"
-pip install -r requirements.txt   # bleak, websockets, aiohttp
-python server.py
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt   # bleak, websockets, aiohttp
+.venv/bin/python server.py
 # open http://localhost:8080
 # click "Demo Mode"
 ```
+
+Use the venv invocation, not bare `python`/`pip`. macOS aliases `python` to system Python in surprising places, and `pip install` outside a venv risks polluting the system environment or hitting `externally-managed-environment` errors on newer macOS Python.
 
 Pass criteria for Branch A:
 - Server starts without crashing on macOS.
