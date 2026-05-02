@@ -27,13 +27,13 @@ Hands stay on the laptop trackpad / one click at a time. No menu diving, no scro
 
 | Time | Action | Narration | What's on screen |
 |---|---|---|---|
-| 0:35–0:40 | Click **Replay Scenario** | *"This is a platoon moving under EW pressure. Three squads, one vehicle, one drone, one sensor post."* | Initial state: mesh tree visible, COP map with friendly markers, empty event stream. |
-| 0:40–0:55 | Watch events arrive | *"Raw reports flow in from the edge — voice from soldiers, telemetry from the vehicle, sensor triggers, drone observations."* | Event stream populating top-to-bottom; mesh-tree leaf nodes light up as events emit; map markers appear. |
+| 0:35–0:40 | Click **Replay Scenario** | *"This is a platoon moving under EW pressure. Three squads, one vehicle, one drone, one sensor post."* | Initial state: mesh hierarchy visible, empty event stream. |
+| 0:40–0:55 | Watch events arrive | *"Raw reports flow in from the edge — voice from soldiers, telemetry from the vehicle, sensor triggers, drone observations."* | Event stream populating top-to-bottom; mesh-hierarchy leaf nodes light up as events emit. |
 | 0:55–1:10 | Compaction timeline collapses raw events into squad summaries | *"In a normal radio workflow, the platoon leader hears all of this. With TacNet, each squad leader's phone compacts before forwarding."* | Compaction-timeline panel: rows visibly collapse. ~12 raw events → 3 squad summaries. |
 | 1:10–1:25 | Commander SITREP appears center stage | *"The commander sees one SITREP — what changed, what's at risk, what to look at next."* | SITREP card at center; SITREP-delta panel highlights "what changed since last step." |
 | 1:25–1:35 | Click one SITREP line → evidence drawer opens | *"Every line is traceable to the raw reports that produced it. No black box."* | Side drawer slides in showing the contributing raw events. |
 | 1:35–1:55 | Toggle **bandwidth degraded** mode → step replay once more | *"Now bandwidth drops by half. Most C2 systems would go blind. TacNet shrinks the summary — keeps the picture."* (Then ~5s of silence so the audience reads the new SITREP next to the old one.) | Bandwidth toggle visibly flips. Event stream shows fewer raw events arriving; SITREP regenerates with smaller text but same recommendation. Hold both versions side by side if the layout supports it. |
-| 1:55–2:05 | Hold final composed state; hand off to close | *(brief silence, then:)* *"This is C2 that degrades gracefully instead of going blind."* | Final composed view: map + mesh tree + SITREP + delta panel + evidence drawer all visible. |
+| 1:55–2:05 | Hold final composed state; hand off to close | *(brief silence, then:)* *"This is C2 that degrades gracefully instead of going blind."* | Final composed view: mesh hierarchy + raw feed + SITREP + delta panel + evidence drawer all visible. |
 
 **Words spoken during demo:** ~95. **Pace:** ~63 wpm — calm, deliberate. The 5s silence inside the bandwidth-toggle beat is intentional — the hero beat needs a moment to land.
 
@@ -68,8 +68,9 @@ These are not "cut from the product" — they are "not visible in the live demo,
 | **NL query box** | Asking + waiting + reading the answer = 20s+ | Cut. Mention in Q&A as next-feature. |
 | **Compression-ratio chart** | Not legible at projector distance in 5s | Cut. Verbal: *"summaries are typically 5–10% the size of raw."* |
 | **Cyber scenario toggle** | Two demos in 90s = one bad demo | Cut. Verbal: *"the same pipeline runs cyber-physical fusion."* |
-| **OLD CODE dashboard** | Cannot run two demos | Backup-video material only. Not on stage. |
+| **Tactical map / COP basemap** | Branch A has no map at all; Branch B has one but no time to narrate | Map is supporting visual context only. Not mentioned in narration. |
 | **MeshNode live integration (Option A)** | Build risk too high | Decision already made in `meshnode-integration.md`. |
+| **Two parallel demos in the live pitch** | 90s only fits one | Backup video is the second demo's home, not the stage. |
 
 ---
 
@@ -77,16 +78,30 @@ These are not "cut from the product" — they are "not visible in the live demo,
 
 Run this 10 minutes before going on stage. Owner: pitch lead.
 
+### Common to both branches
+
 - [ ] Laptop fully charged + plugged in.
 - [ ] Browser zoom set to 110% (text legibility from back row).
 - [ ] Window in `disable-fullscreen-then-cmd+1` state — single window, no tabs, no notification chrome.
-- [ ] Backend running: `curl localhost:8000/state` returns 200 with empty Raven Gap state.
-- [ ] Frontend served at known URL, fully loaded — Replay button visible, no console errors.
 - [ ] Bandwidth toggle in default (full bandwidth) state.
 - [ ] All notifications silenced (Do Not Disturb on; Slack closed; email closed; phone silent).
 - [ ] Backup video file open in a second hidden tab — `Cmd+Tab` away to it if live demo fails.
-- [ ] LLM API key valid, agent prompt tested, heuristic fallback verified working.
 - [ ] If using prop A: iPhone unlocked, MeshNode running, Retrieval tab open, prop on the table within reach.
+
+### Branch A only (OLD dashboard)
+
+- [ ] Server running: `curl http://localhost:8080/` returns the dashboard HTML.
+- [ ] WebSocket reachable: dashboard's connection indicator says "Connected" (uses `:8081`).
+- [ ] Demo Mode toggle responds; Replay button visible.
+- [ ] Hierarchy panel and live feed populate when demo mode triggers.
+- [ ] If a hosted-LLM brief is wired (stretch only): API key valid, deterministic-script fallback verified working.
+
+### Branch B only (Sentinel Forge backend)
+
+- [ ] Backend running: `curl http://localhost:8000/state` returns 200 with empty Raven Gap state.
+- [ ] Frontend served at known URL, fully loaded — Replay button visible, no console errors.
+- [ ] LLM API key valid, agent prompt tested, heuristic fallback verified working.
+- [ ] MapLibre tiles render (or pre-cached), or fallback styling looks intentional.
 
 ---
 
@@ -98,10 +113,10 @@ What to do *during* the demo if something breaks. Practice these mid-pitch trans
 |---|---|---|
 | Replay button doesn't respond | Reload page (`Cmd+R`), restart from 0:35 | *"One moment — let me restart the scenario."* |
 | Events appear but SITREP doesn't generate | Wait 3 seconds; if still nothing, refresh | The heuristic fallback should fire automatically. |
-| Map tiles fail to load | Continue — the tactical board still works without basemap | Don't draw attention to it. |
+| Map tiles fail to load (Branch B only) | Continue — none of the narration depends on the map | Don't draw attention to it. |
 | Backend crashes (500 errors) | `Cmd+Tab` to the backup video tab; play | *"For time, here's a recording of the run-through — same demo, captured this morning."* |
-| Bandwidth toggle has no visible effect | Skip the bandwidth beat, go straight to close | Drop ~15s of demo, ~15s available for Q&A bonus |
-| Cloud LLM hangs >2s | Heuristic fallback kicks in automatically; brief still appears, just less prosey | No words needed. Move on. |
+| Bandwidth toggle has no visible effect | Skip the bandwidth beat, go straight to close | Drop ~20s of demo, available for Q&A. Don't try to debug it on stage. |
+| Hosted LLM hangs >2s (only relevant if the stretch LLM brief is wired in) | Deterministic-text fallback fires automatically; brief still appears | No words needed. Move on. |
 | Prop iPhone (option A) crashes | Don't pick it up. Continue without it. | The prop pickup is optional; if it's clearly broken, skip silently. |
 
 **The one rule:** if the live demo fails at any point past 1:00, *do not retry* — switch to the backup video. We have 30s of margin in the impact + close blocks; we don't have margin to debug live.
@@ -114,13 +129,13 @@ Pre-rehearsed answers, ≤25 seconds each.
 
 | Q | A |
 |---|---|
-| *"Does this need internet?"* | "The demo uses a hosted LLM for reliability. The product architecture is on-device — Gemma 4 runs on every soldier's phone via the Cactus runtime. The mesh has no internet dependency." |
-| *"What happens when a squad leader is hit?"* | "Self-healing tree. Children re-parent to the next live ancestor in 60 seconds. No message loss; pre-sealed succession means promotion isn't a vote." |
+| *"Does this need internet?"* | "Today's demo runs the deterministic compaction path; if a hosted LLM is wired in, it's only writing the prose summary and falls back to a script if it fails. The product architecture is on-device — Gemma 4 runs on every soldier's phone via the Cactus runtime. The mesh has no internet dependency." |
+| *"What happens when a squad leader is hit?"* | "The architecture is a self-healing tree — pre-sealed succession means promotion isn't a vote, and children re-parent to the nearest live ancestor on heartbeat timeout. We didn't show that beat in the 90 seconds; it's a P1 demo feature." |
 | *"How is this not a kill chain?"* | "It recommends *collection* — retask the drone, query the vehicle, ask for an ACE report. Not engagement. Humans-in-the-loop by design." |
-| *"What's the bandwidth assumption?"* | "We tested degradation at 50% — the system shrinks summaries before it goes blind. Long-range LoRa gives roughly 0.3–37 kbps; intent tokens fit in 50–100 bytes." |
+| *"What's the bandwidth assumption?"* | "The demo simulates a 50% bandwidth drop — you saw the system shrink the summary instead of going blind. The architecture targets long-range LoRa at roughly 0.3–37 kbps; intent tokens fit in 50–100 bytes. Real-world performance characterization is roadmap." |
 | *"Why not just use ATAK?"* | "ATAK is the platform we plug *into* — long-term roadmap is an ATAK plugin. We're the AI compaction layer above the radio, not a replacement for the COP." |
 | *"How do you handle classified data?"* | "Phase 1 architecture uses a USB-C dongle — phone stays unclassified hardware, dongle is the security boundary. Pull the dongle, the device is just a phone." |
-| *"What did you actually build?"* | "A platoon-level micro-C2 simulator with deterministic squad compaction, evidence-traceable SITREPs, a graceful-degradation mode, and a doctrinal-prompt LLM brief — all running locally." |
+| *"What did you actually build?"* | "A platoon-level micro-C2 simulator with deterministic squad compaction, evidence-traceable SITREPs, and a graceful-degradation mode. The mesh state and compaction logic run locally; if a hosted LLM is wired in, it only writes the prose brief and falls back to deterministic text." |
 | *"What's next?"* | "Real LoRa transport, ATAK plugin, multi-phone field test, STTR Phase I submission with Cornell as research partner." |
 
 ---
