@@ -1,8 +1,9 @@
 localdocs/
 
-# macOS
+# macOS / OS files
 .DS_Store
 ._*
+Thumbs.db
 
 # Editor / IDE
 *.swp
@@ -14,6 +15,8 @@ localdocs/
 # Secrets / local env
 .env
 .env.*
+*.key
+*.pem
 !.env.example
 
 # Claude Code (project settings.json is shared, local overrides are not)
@@ -23,15 +26,34 @@ localdocs/
 # Personal notes
 James_notes/
 
-# Node / npm (defensive — applies to any subproject)
-node_modules/
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+
+# Python virtualenvs
+venv/
+.venv/
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Vite / build output
+# Node / React / Vite build output
+node_modules/
 dist/
 build/
 .vite/
 *.tsbuildinfo
+
+# Testing / Coverage
+.coverage
+htmlcov/
+.pytest_cache/

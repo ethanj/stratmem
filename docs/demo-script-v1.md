@@ -2,12 +2,11 @@
 
 **Total runtime:** 3:00. **Live demo window:** ~1:30. **Owner:** pitch lead.
 
-This is the shared timing baseline. It is *not* a build spec — for that, see `unified-plan-v3.md`. Once an implementation path is chosen, the pitch lead rehearses from the path-specific script:
+This is the shared timing baseline. It is *not* a build spec — for that, see `unified-plan-v3.md`. The team selected the Sentinel Forge path, so the pitch lead rehearses from:
 
-- OLD dashboard: `docs/branch-a-old-dashboard-demo-script.md`
 - Sentinel Forge: `docs/branch-b-sentinel-forge-demo-script.md`
 
-This file defines the common 180-second story; the path-specific scripts define the exact on-stage clicks and failure moves.
+The OLD dashboard run sheet has been archived at `docs/archive/branch-a-old-dashboard-demo-script.md`. This file defines the common 180-second story; the active run sheet defines the exact on-stage clicks and failure moves.
 
 ---
 
@@ -15,7 +14,7 @@ This file defines the common 180-second story; the path-specific scripts define 
 
 | Time | Block | Words / actions |
 |---|---|---|
-| 0:00–0:20 | **Problem** | "The cloud is the casualty." Frame Raven Gap. |
+| 0:00–0:20 | **Problem** | "The cloud is the casualty." Frame Raven Gap as a fictional contested border valley/corridor. |
 | 0:20–0:35 | **Solution** | "Semantic compression over a tactical mesh." One sentence: *what TacNet Edge is.* |
 | 0:35–2:05 | **Demo** (90s) | Detailed in §2. |
 | 2:05–2:25 | **Impact** | Why this matters for the platoon and the program. |
@@ -32,15 +31,15 @@ Hands stay on the laptop trackpad / one click at a time. No menu diving, no scro
 
 | Time | Action | Narration | What's on screen |
 |---|---|---|---|
-| 0:35–0:40 | Click **Replay Scenario** | *"This is a platoon moving under EW pressure. Three squads, one vehicle, one drone, one sensor post."* | Initial state: mesh hierarchy visible, static Raven Gap COP panel visible, empty event stream. |
-| 0:40–0:55 | Watch events arrive | *"Watch the map and the feed. Raw reports flow in from the edge — soldiers, vehicle, sensor, drone."* | Event stream populating top-to-bottom; mesh-hierarchy leaf nodes light up; COP markers pulse as events arrive. |
-| 0:55–1:10 | Squad-leader compaction summaries appear in the feed, grouped with their source events | *"In a normal radio workflow, the platoon leader hears all of this. With TacNet, each squad leader's phone compacts before forwarding."* | ~12 raw events get joined by 3 squad-summary entries; marker clusters resolve into a commander-level picture. Branch A: visible in the existing feed plus static COP panel. Branch B: dedicated `CompactionTimeline.tsx` panel plus map surface. |
-| 1:10–1:25 | Commander SITREP appears center stage | *"The commander sees one SITREP — what changed, what's at risk, what to look at next."* | SITREP card at center; SITREP-delta panel highlights "what changed since last step"; COP risk zone/recommendation visible. |
-| 1:25–1:35 | Click one SITREP line → evidence drawer opens | *"Every line is traceable to the raw reports that produced it. No black box."* | Side drawer slides in showing the contributing raw events. |
-| 1:35–1:55 | Toggle **bandwidth degraded** mode → step replay once more | *"Now bandwidth drops by half. Most C2 systems would go blind. TacNet shrinks the summary — keeps the picture."* (Then ~5s of silence so the audience reads the new SITREP next to the old one.) | Bandwidth toggle visibly flips. Raw feed and map markers thin out; SITREP regenerates with smaller text but same recommendation. Hold both versions side by side if the layout supports it. |
-| 1:55–2:05 | Hold final composed state; hand off to close | *(brief silence, then:)* *"This is C2 that degrades gracefully instead of going blind."* | Final composed view: Raven Gap COP + mesh hierarchy + raw feed + SITREP + delta panel + evidence drawer all visible. |
+| 0:35–0:40 | Click **Replay Scenario** | *"This is a platoon moving under EW pressure: three rifle squads, one weapons squad, a JLTV support vehicle, a small UAS team, and an OP/LP sensor."* | Initial state: mesh hierarchy visible, Raven Gap COP visible with MGRS grid, unit icons, NAIs, phase line, checkpoints, and empty event stream. |
+| 0:40–0:55 | Watch events arrive | *"Watch the map and the feed. SALUTE reports, ACE/LACE updates, UAS observations, sensor triggers, and PLI updates flow in from the edge."* | Event stream populating top-to-bottom; mesh-hierarchy leaf nodes light up; COP markers pulse as events arrive. |
+| 0:55–1:10 | Squad-leader compaction summaries appear in the feed, grouped with their source events | *"In a normal radio workflow, the platoon leader hears all of this. With TacNet, each squad leader's phone compacts before forwarding."* | ~12 source reports get joined by 3 squad-summary entries; marker clusters resolve into a commander-level picture. Active path: dedicated `CompactionTimeline.tsx` panel plus map surface. |
+| 1:10–1:25 | Commander SITREP appears center stage | *"The commander sees one SITREP — what changed, what threatens the decision cycle, and whether to retask UAS, request ACE, or confirm contact."* | SITREP card at center; SITREP-delta panel highlights "what changed since last step"; COP NAI/risk zone and collection recommendation visible. |
+| 1:25–1:35 | Click one SITREP line → evidence drawer opens | *"Every line is traceable to the source reports that produced it. No black box."* | Side drawer slides in showing the contributing source reports. |
+| 1:35–1:55 | Toggle **EW degraded** mode → step replay once more | *"Now SATCOM is denied and tactical radio is intermittent. Most C2 systems lose the picture. TacNet shrinks the report — keeps the commander picture."* (Then ~5s of silence so the audience reads the new SITREP next to the old one.) | EW-degraded toggle visibly flips. Source feed and map markers thin out; SITREP regenerates with smaller text but same collection recommendation. Hold both versions side by side if the layout supports it. |
+| 1:55–2:05 | Hold final composed state; hand off to close | *(brief silence, then:)* *"This is C2 that degrades gracefully instead of going blind."* | Final composed view: Raven Gap COP + mesh hierarchy + source report feed + SITREP + delta panel + evidence drawer all visible. |
 
-**Words spoken during demo:** ~100. **Pace:** ~67 wpm — calm, deliberate. The 5s silence inside the bandwidth-toggle beat is intentional — the hero beat needs a moment to land.
+**Words spoken during demo:** ~100. **Pace:** ~67 wpm — calm, deliberate. The 5s silence inside the EW-degraded beat is intentional — the hero beat needs a moment to land.
 
 ---
 
@@ -71,9 +70,9 @@ These are not "cut from the product" — they are "not visible in the live demo,
 | **Asset heartbeat color states** (GREEN/AMBER/RED) | No time to narrate the state machine | Cosmetic on screen, not called out. |
 | **Tailwind / shadcn migration** | Polish below readability threshold | Skip for hackathon. |
 | **NL query box** | Asking + waiting + reading the answer = 20s+ | Cut. Mention in Q&A as next-feature. |
-| **Compression-ratio chart** | Not legible at projector distance in 5s | Cut. Verbal: *"summaries are typically 5–10% the size of raw."* |
+| **Compression-ratio chart** | Not legible at projector distance in 5s | Cut. Verbal: *"summaries are typically 5–10% the size of source traffic."* |
 | **Cyber scenario toggle** | Two demos in 90s = one bad demo | Cut. Verbal: *"the same pipeline runs cyber-physical fusion."* |
-| **Real MapLibre / live COP basemap** | Tile loading and real geospatial data add risk | Branch A uses a static Raven Gap COP panel instead: no tiles, no GPS, no map service. |
+| **Live basemap dependency** | Tile loading and real geospatial data add risk | The active map surface must have a static/dark fallback with MGRS grid, unit icons, NAIs, phase line, and checkpoints so the demo does not depend on venue networking. |
 | **MeshNode live integration (Option A)** | Build risk too high | Decision already made in `meshnode-integration.md`. |
 | **Two parallel demos in the live pitch** | 90s only fits one | Backup video is the second demo's home, not the stage. |
 
@@ -81,12 +80,11 @@ These are not "cut from the product" — they are "not visible in the live demo,
 
 ## 5. Branch Run Sheets
 
-Setup checklists, failure moves, and Q&A live in the selected branch run sheet:
+Setup checklists, failure moves, and Q&A live in the active run sheet:
 
-- OLD dashboard: `docs/branch-a-old-dashboard-demo-script.md`
 - Sentinel Forge: `docs/branch-b-sentinel-forge-demo-script.md`
 
-Do not rehearse from this shared baseline once an implementation path is selected.
+Do not rehearse from this shared baseline.
 
 ---
 

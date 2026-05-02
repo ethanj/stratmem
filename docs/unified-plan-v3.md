@@ -1,21 +1,17 @@
 # TacNet Hackathon — Unified Plan (v3)
 
 **Date:** 2026-05-02
+**Status:** Branch B / Sentinel Forge selected by the team due to implementation expertise. Active execution docs are `docs/branch-b-sentinel-forge-hackathon-plan.md` and `docs/branch-b-sentinel-forge-demo-script.md`. Branch A docs are archived under `docs/archive/`.
 **Supersedes:** `docs/archive/unified-plan-v2.md` (which superseded v1).
 **Driver:** Codex review of v2 (3-minute pitch constraint + OLD CODE dashboard discovery).
 
-This version is **stricter and shorter** than v2. The 3-minute constraint and the existence of a TacNet-shaped artifact in `voice-agents-hack/OLD CODE/dashboard/` together change the leading edge of the build plan. v2 stays in tree as historical reference.
+This version is retained as the branch-selection record. The active hackathon implementation is the Sentinel Forge path.
 
 ---
 
 ## TL;DR
 
-> **Build the smallest TacNet-shaped demo that the 90-second pitch window can show.** Hour 0–1 is a boot-test gate that picks one of two branches:
->
-> - **Branch A (preferred):** OLD CODE dashboard as the demo shell. Tune it to Raven Gap; add bandwidth degradation + provenance click + SITREP-delta highlight.
-> - **Branch B (fallback):** Sentinel Forge backend + reskin per v2. Used only if Branch A fails the gate.
->
-> Either branch ships the same 90-second story (`docs/demo-script-v1.md`) with its own on-stage run sheet (`docs/branch-a-old-dashboard-demo-script.md` or `docs/branch-b-sentinel-forge-demo-script.md`). Build effort to demo-ready is similar (~6–8 hours of tuning either way), so the gate is decided on **what boots cleanly and looks credible at projector zoom in the first hour**, not on theoretical superiority.
+> **Build the smallest TacNet-shaped demo that the 90-second pitch window can show.** The team selected the Sentinel Forge path because it best matches current team expertise. Active build plan: `docs/branch-b-sentinel-forge-hackathon-plan.md`. Active stage script: `docs/branch-b-sentinel-forge-demo-script.md`.
 
 ---
 
@@ -81,15 +77,15 @@ The shared story is fixed regardless of shell. `docs/demo-script-v1.md` defines 
 
 | Beat | What's on screen |
 |---|---|
-| 0:00–0:05 | Press Replay → mesh hierarchy visible, static Raven Gap COP visible, empty event stream |
-| 0:05–0:20 | Raw reports flow in from squad/vehicle/drone/sensor; COP markers pulse as events arrive |
-| 0:20–0:35 | Compaction collapses ~12 raw → 3 squad summaries; marker clusters resolve into a commander-level picture |
-| 0:35–0:50 | Commander SITREP appears; "what changed" highlighted; COP risk zone/recommendation visible |
+| 0:00–0:05 | Press Replay → mesh hierarchy visible, Raven Gap COP visible with MGRS grid, unit icons, NAIs, phase line, checkpoints, empty event stream |
+| 0:05–0:20 | SALUTE reports, ACE/LACE updates, UAS observations, sensor triggers, and PLI updates flow in; COP markers pulse as events arrive |
+| 0:20–0:35 | Compaction collapses ~12 source reports → 3 squad summaries; marker clusters resolve into a commander-level picture |
+| 0:35–0:50 | Commander SITREP appears; "what changed" highlighted; COP NAI/risk zone and collection recommendation visible |
 | 0:50–1:00 | Click one SITREP line → provenance/evidence visible |
-| 1:00–1:20 | Toggle bandwidth-degraded → raw marker detail thins, smaller summary, same commander picture |
+| 1:00–1:20 | Toggle EW-degraded → SATCOM denied/radio intermittent; source marker detail thins, smaller summary, same commander picture |
 | 1:20–1:30 | Hold final composed state |
 
-**Map note:** the map is back in the live demo because it is the fastest visual way to say "command picture." For Branch A, this is **not MapLibre** and not a real geospatial stack. It is a static Raven Gap COP panel: fixed tactical sketch, friendly markers, sensor/drone/vehicle icons, event pulses, contact/risk overlays, and degraded-mode fading. Branch B can use its existing MapLibre surface or the same static fallback. The map sells the scene; the compaction/SITREP still proves the product.
+**Map note:** the map is back in the live demo because it is the fastest visual way to say "command picture." The Raven Gap COP is a fictional contested border valley/corridor, not a live operating area. It should read as a command product: MGRS grid, unit icons, NAIs, phase line, checkpoints, friendly markers, small UAS/JLTV/OP/LP sensor icons, event pulses, contact/risk overlays, and degraded-mode fading. The map sells the scene; the compaction/SITREP still proves the product.
 
 That's the only demo we ship. Everything else is Q&A or backup video.
 
@@ -111,8 +107,8 @@ That's the only demo we ship. Everything else is Q&A or backup video.
 | Replace `DEMO_TRANSCRIPTS` and `DEMO_COMPACTIONS` with **deterministic Raven Gap script** | ~1h | Random rotation looks like a screensaver; deterministic looks like a system. |
 | Replace random timing with **stepped replay** (Replay button advances script one event at a time, with auto-advance toggle) | ~1h | Pitch lead needs to control pace; auto-advance is for backup video |
 | Add **static Raven Gap COP panel** with friendly/contact/sensor markers and event pulses | ~1h | This is the visual wow. It makes the product read as C2 immediately without adding map tiles or GPS plumbing. |
-| Add **bandwidth-degraded toggle** that gray-outs ~half the events and shrinks compactions | ~1h | This is the hero beat at 1:00 |
-| Add **provenance highlight** — clicking a compaction highlights its source raw events | ~1h | The 0:50 beat |
+| Add **EW-degraded toggle** that gray-outs ~half the events and shrinks compactions | ~1h | This is the hero beat at 1:00 |
+| Add **provenance highlight** — clicking a compaction highlights its source reports | ~1h | The 0:50 beat |
 | Add **"what changed since last SITREP"** delta line to compactions | ~1h | The 0:35–0:50 beat |
 | Tune copy / labels to platoon-leader vocabulary | ~30m | Drop generic "tactical" framing |
 
@@ -146,7 +142,7 @@ Per `archive/unified-plan-v2.md` §3, but with the codex 3-minute cuts applied:
 - `server/app/scenarios/raven_gap.py` — replaces `coordinated_intrusion` as default
 - `server/app/compaction/squad_rollup.py` — Python deterministic
 - `server/app/sitrep/delta.py` — diff successive correlations
-- New React components: `MeshTree.tsx`, `SitrepDeltaPanel.tsx`, `CompactionTimeline.tsx`, `BandwidthToggle.tsx`, `EvidenceDrawer.tsx`
+- New React components: `MeshTree.tsx`, `SitrepDeltaPanel.tsx`, `CompactionTimeline.tsx`, `DegradedCommsToggle.tsx`, `EvidenceDrawer.tsx`
 
 ### UI relabel (no rename)
 - Display copy: "Sentinel Forge" / "incident" → "TacNet Edge" / "SITREP" / "Commander Situation."
@@ -175,7 +171,7 @@ Codex's recommended cuts, ratified:
 | Live MeshNode bridge (Option A in `meshnode-integration.md`) | Cut — confirmed in `meshnode-integration.md` |
 | Two parallel demos in the live pitch | Cut — backup video only |
 | NL query box | Q&A; "next feature" |
-| Compression-ratio chart | Verbal: "summaries are 5–10% the size of raw" |
+| Compression-ratio chart | Verbal: "summaries are 5–10% the size of source traffic" |
 
 If a P0 feature is not in the 90-second demo, it is not P0. Period.
 
@@ -196,7 +192,7 @@ Hour 1 is the branch point. Schedules below assume the gate has been passed.
 | Hour | Owner | Goal | Deliverable |
 |---:|---|---|---|
 | 1–3 | Backend lead | Replace `demo_loop()` with deterministic Raven Gap script + handcrafted compaction text | Script-driven replay; Replay button advances one event |
-| 1–3 | Frontend lead | Static Raven Gap COP panel + bandwidth toggle + provenance highlight scaffolding | Map visible, markers/pulses stubbed, controls visible even if not yet wired |
+| 1–3 | Frontend lead | Static Raven Gap COP panel + EW-degraded toggle + provenance highlight scaffolding | Map visible, markers/pulses stubbed, controls visible even if not yet wired |
 | 3–6 | Both | Wire compaction grouping, SITREP delta, evidence-source linking | Click compaction → source events highlight |
 | 6–8 | All | Wire COP marker state to replay/degraded mode; copy tune; verify deterministic SITREP looks credible at projector zoom | Demo runs end-to-end on script-only output, no LLM yet |
 | 8–10 | All | **Hour-10 integration gate** — full 90s flow runs end-to-end |
@@ -225,7 +221,7 @@ This is the "do not build, even if proposed" list, tightened:
 - ❌ Auto-promotion / pre-sealed succession envelopes
 - ❌ Heartbeat state machine
 - ❌ Live audio recording
-- ❌ Kill-chain, targeting, weapons logic
+- ❌ Weapons or fires logic. The demo supports threat recognition, collection prioritization, and commander attention only.
 - ❌ Backend rename (`incident → sitrep`) — UI relabel only (Branch B)
 - ❌ Belief lifecycle — replaced by SITREP delta
 - ❌ MeshNode live integration — confirmed in `meshnode-integration.md`
@@ -265,10 +261,12 @@ Pitch-time A/B fork (MeshNode prop vs on-device framing sentence) — defaults t
 
 | Doc | Role |
 |---|---|
-| `docs/unified-plan-v3.md` (this) | **Canonical hackathon spec.** |
-| `docs/demo-script-v1.md` | Shared 3-minute timing baseline. Branch-agnostic. |
-| `docs/branch-a-old-dashboard-demo-script.md` | Stage run sheet for the OLD dashboard path. |
-| `docs/branch-b-sentinel-forge-demo-script.md` | Stage run sheet for the Sentinel Forge path. |
+| `docs/branch-b-sentinel-forge-hackathon-plan.md` | **Active hackathon implementation plan.** |
+| `docs/branch-b-sentinel-forge-demo-script.md` | **Active stage run sheet.** |
+| `docs/demo-script-v1.md` | Shared 3-minute timing baseline. |
+| `docs/unified-plan-v3.md` (this) | Branch-selection record and historical context. |
+| `docs/archive/branch-a-old-dashboard-hackathon-plan.md` | Archived OLD dashboard implementation plan. |
+| `docs/archive/branch-a-old-dashboard-demo-script.md` | Archived OLD dashboard stage run sheet. |
 | `docs/archive/unified-plan-v2.md` | Historical — Branch B reference scope. |
 | `docs/archive/unified-plan.md` (v1) | Historical — superseded. |
 | `docs/meshnode-integration.md` | Decision doc: A/B/C options on MeshNode (live integration cut). |

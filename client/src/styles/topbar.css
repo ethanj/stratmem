@@ -1,0 +1,287 @@
+/* styles/topbar.css */
+
+.topbar {
+  min-height: 0;
+  height: 68px;
+  display: grid;
+  grid-template-columns:
+    minmax(285px, 1.5fr)
+    minmax(390px, 1.3fr)
+    minmax(150px, 0.62fr)
+    minmax(230px, 1fr)
+    minmax(155px, 0.62fr);
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.25);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border: 2px solid #8fd3ff;
+  color: #8fd3ff;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 22px;
+  flex: 0 0 auto;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.brand p {
+  margin: 2px 0 0;
+  color: #8ba5bb;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.control-btn {
+  background: #06131f;
+  border: 1px solid var(--border);
+  color: #8ed7ff;
+  padding: 9px 14px;
+  border-radius: 5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    filter 140ms ease,
+    opacity 140ms ease,
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.control-btn:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.control-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.control-btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.control-btn.start {
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+
+.control-btn.start.active {
+  color: #050b12;
+  background: linear-gradient(180deg, #4ade80, #22c55e);
+  border-color: rgba(34, 197, 94, 0.85);
+  box-shadow:
+    0 0 16px rgba(34, 197, 94, 0.22),
+    inset 0 0 12px rgba(255, 255, 255, 0.12);
+}
+
+.runtime-status,
+.scenario-box,
+.time-box {
+  height: 46px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 7px 12px;
+  background: rgba(4, 10, 18, 0.6);
+  min-width: 0;
+}
+
+.runtime-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--green);
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.live-dot.active {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.75);
+  animation: livePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+.runtime-clock {
+  color: var(--muted);
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scenario-box span,
+.time-box span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.scenario-box strong,
+.time-box strong {
+  display: block;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time-box small {
+  display: block;
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+}
+
+/* Compact height */
+@media (max-height: 820px) and (min-width: 981px) {
+  .topbar {
+    height: 64px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .runtime-status,
+  .scenario-box,
+  .time-box {
+    height: 42px;
+  }
+
+  .control-btn {
+    padding: 8px 12px;
+  }
+}
+
+/* Medium/narrow */
+@media (max-width: 980px) {
+  .topbar {
+    height: auto;
+    grid-template-columns: minmax(280px, 1fr) minmax(390px, auto) minmax(170px, auto);
+    grid-template-areas:
+      "brand controls live"
+      "brand scenario time";
+    min-height: 110px;
+    align-items: center;
+  }
+
+  .brand {
+    grid-area: brand;
+  }
+
+  .topbar-controls {
+    grid-area: controls;
+    justify-content: start;
+  }
+
+  .runtime-status {
+    grid-area: live;
+  }
+
+  .scenario-box {
+    grid-area: scenario;
+  }
+
+  .time-box {
+    grid-area: time;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "controls"
+      "live"
+      "scenario"
+      "time";
+    min-height: auto;
+  }
+
+  .topbar-controls {
+    justify-content: stretch;
+  }
+
+  .control-btn {
+    flex: 1;
+    padding-inline: 10px;
+  }
+}
+
+.scenario-select {
+  width: 100%;
+  margin-top: 1px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #e8f3ff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scenario-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.scenario-select option {
+  background: #07111c;
+  color: #e8f3ff;
+}
