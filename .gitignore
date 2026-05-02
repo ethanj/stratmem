@@ -18,6 +18,7 @@ localdocs/
 
 # Claude Code (project settings.json is shared, local overrides are not)
 .claude/settings.local.json
+.claude/worktrees/
 
 # Personal notes
 James_notes/
