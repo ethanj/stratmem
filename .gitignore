@@ -3,3 +3,5 @@ localdocs/
 James_notes/visualization/briefing.html
 James_notes/visualization/README.md
 James_notes/visualization/scenario.html
+.fallow/cache.bin
+.fallow/churn.bin

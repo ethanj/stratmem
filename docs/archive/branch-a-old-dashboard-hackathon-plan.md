@@ -1,9 +1,10 @@
 # TacNet Edge — Branch A Hackathon Plan
 
 **Date:** 2026-05-02
+**Status:** Archived option; team selected Sentinel Forge.
 **Build shell:** `../voice-agents-hack/OLD CODE/dashboard/`
 **Shared timing baseline:** `docs/demo-script-v1.md`
-**Demo script:** `docs/branch-a-old-dashboard-demo-script.md`
+**Demo script:** `docs/archive/branch-a-old-dashboard-demo-script.md`
 **Pitch window:** 3:00 total, ~1:30 live demo
 
 This plan turns the existing OLD dashboard into a focused TacNet Edge demo for Raven Gap. The goal is not a general product rebuild. The goal is one reliable, visually clear live sequence: raw edge reports become squad summaries, then a commander SITREP, then bandwidth degrades and the command picture survives.
