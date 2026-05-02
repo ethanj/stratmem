@@ -1,7 +1,7 @@
 # TacNet Hackathon — Unified Plan (v3)
 
 **Date:** 2026-05-02
-**Supersedes:** `docs/unified-plan-v2.md` (which superseded v1).
+**Supersedes:** `docs/archive/unified-plan-v2.md` (which superseded v1).
 **Driver:** Codex review of v2 (3-minute pitch constraint + OLD CODE dashboard discovery).
 
 This version is **stricter and shorter** than v2. The 3-minute constraint and the existence of a TacNet-shaped artifact in `voice-agents-hack/OLD CODE/dashboard/` together change the leading edge of the build plan. v2 stays in tree as historical reference.
@@ -15,7 +15,7 @@ This version is **stricter and shorter** than v2. The 3-minute constraint and th
 > - **Branch A (preferred):** OLD CODE dashboard as the demo shell. Tune it to Raven Gap; add bandwidth degradation + provenance click + SITREP-delta highlight.
 > - **Branch B (fallback):** Sentinel Forge backend + reskin per v2. Used only if Branch A fails the gate.
 >
-> Either branch ships the same 90-second demo (`docs/demo-script-v1.md`). Build effort to demo-ready is similar (~4–6 hours of tuning either way), so the gate is decided on **what boots cleanly and looks credible at projector zoom in the first hour**, not on theoretical superiority.
+> Either branch ships the same 90-second story (`docs/demo-script-v1.md`) with its own on-stage run sheet (`docs/branch-a-old-dashboard-demo-script.md` or `docs/branch-b-sentinel-forge-demo-script.md`). Build effort to demo-ready is similar (~6–8 hours of tuning either way), so the gate is decided on **what boots cleanly and looks credible at projector zoom in the first hour**, not on theoretical superiority.
 
 ---
 
@@ -77,19 +77,19 @@ Decision must be locked by Hour 1:00. **Do not let this drift.**
 
 ## 2. Demo contract (shared by both branches)
 
-The demo is fixed regardless of shell. Detailed in `docs/demo-script-v1.md`. The build target for either branch is to make this storyboard executable in 90 seconds:
+The shared story is fixed regardless of shell. `docs/demo-script-v1.md` defines the common timing baseline; the branch-specific demo scripts define the exact clicks and failure moves. The build target for either branch is to make this storyboard executable in 90 seconds:
 
 | Beat | What's on screen |
 |---|---|
-| 0:00–0:05 | Press Replay → mesh hierarchy visible, empty event stream |
-| 0:05–0:20 | Raw reports flow in from squad/vehicle/drone/sensor |
-| 0:20–0:35 | Compaction collapses ~12 raw → 3 squad summaries |
-| 0:35–0:50 | Commander SITREP appears; "what changed" highlighted |
+| 0:00–0:05 | Press Replay → mesh hierarchy visible, static Raven Gap COP visible, empty event stream |
+| 0:05–0:20 | Raw reports flow in from squad/vehicle/drone/sensor; COP markers pulse as events arrive |
+| 0:20–0:35 | Compaction collapses ~12 raw → 3 squad summaries; marker clusters resolve into a commander-level picture |
+| 0:35–0:50 | Commander SITREP appears; "what changed" highlighted; COP risk zone/recommendation visible |
 | 0:50–1:00 | Click one SITREP line → provenance/evidence visible |
-| 1:00–1:20 | Toggle bandwidth-degraded → smaller summary, same picture |
+| 1:00–1:20 | Toggle bandwidth-degraded → raw marker detail thins, smaller summary, same commander picture |
 | 1:20–1:30 | Hold final composed state |
 
-**Map note:** the OLD dashboard has no tactical map; Sentinel Forge has maplibre. The 90-second demo is map-optional — if Branch B ships, the map sits as supporting visual context but is not narrated. If Branch A ships, no map is shown and no map is mentioned. The demo script reflects this.
+**Map note:** the map is back in the live demo because it is the fastest visual way to say "command picture." For Branch A, this is **not MapLibre** and not a real geospatial stack. It is a static Raven Gap COP panel: fixed tactical sketch, friendly markers, sensor/drone/vehicle icons, event pulses, contact/risk overlays, and degraded-mode fading. Branch B can use its existing MapLibre surface or the same static fallback. The map sells the scene; the compaction/SITREP still proves the product.
 
 That's the only demo we ship. Everything else is Q&A or backup video.
 
@@ -110,12 +110,13 @@ That's the only demo we ship. Everything else is Q&A or backup video.
 |---|---|---|
 | Replace `DEMO_TRANSCRIPTS` and `DEMO_COMPACTIONS` with **deterministic Raven Gap script** | ~1h | Random rotation looks like a screensaver; deterministic looks like a system. |
 | Replace random timing with **stepped replay** (Replay button advances script one event at a time, with auto-advance toggle) | ~1h | Pitch lead needs to control pace; auto-advance is for backup video |
+| Add **static Raven Gap COP panel** with friendly/contact/sensor markers and event pulses | ~1h | This is the visual wow. It makes the product read as C2 immediately without adding map tiles or GPS plumbing. |
 | Add **bandwidth-degraded toggle** that gray-outs ~half the events and shrinks compactions | ~1h | This is the hero beat at 1:00 |
 | Add **provenance highlight** — clicking a compaction highlights its source raw events | ~1h | The 0:50 beat |
 | Add **"what changed since last SITREP"** delta line to compactions | ~1h | The 0:35–0:50 beat |
 | Tune copy / labels to platoon-leader vocabulary | ~30m | Drop generic "tactical" framing |
 
-**Total P0 tuning: ~5.5 hours.** All in Python + vanilla JS — no React, no shadcn, no migration. Deterministic compaction text is generated by the Raven Gap script (handcrafted per beat); no LLM is on the critical path.
+**Total P0 tuning: ~6.5 hours.** All in Python + vanilla JS — no React, no shadcn, no migration, no MapLibre for Branch A. Deterministic compaction text is generated by the Raven Gap script (handcrafted per beat); no LLM is on the critical path.
 
 ### What we add only if P0 is stable (stretch)
 
@@ -134,7 +135,7 @@ That's the only demo we ship. Everything else is Q&A or backup video.
 
 ## 4. Branch B scope — Sentinel Forge backend (fallback)
 
-Per `unified-plan-v2.md` §3, but with the codex 3-minute cuts applied:
+Per `archive/unified-plan-v2.md` §3, but with the codex 3-minute cuts applied:
 
 ### Keep
 - FastAPI pipeline, fusion scoring, scenario engine, agent router with heuristic fallback
@@ -145,12 +146,15 @@ Per `unified-plan-v2.md` §3, but with the codex 3-minute cuts applied:
 - `server/app/scenarios/raven_gap.py` — replaces `coordinated_intrusion` as default
 - `server/app/compaction/squad_rollup.py` — Python deterministic
 - `server/app/sitrep/delta.py` — diff successive correlations
-- `agent/prompts.py` — `soul.md`-derived rules (per `unified-plan-v2.md` §C)
 - New React components: `MeshTree.tsx`, `SitrepDeltaPanel.tsx`, `CompactionTimeline.tsx`, `BandwidthToggle.tsx`, `EvidenceDrawer.tsx`
 
 ### UI relabel (no rename)
 - Display copy: "Sentinel Forge" / "incident" → "TacNet Edge" / "SITREP" / "Commander Situation."
 - Backend field names stay `incident`. Confirmed in v2.
+
+### Stretch only if P0 is stable
+- `agent/prompts.py` — `soul.md`-derived rules for optional hosted prose brief (per `archive/unified-plan-v2.md` §C)
+- Hosted LLM commander brief, with deterministic SITREP fallback already working
 
 **Total Branch B effort: ~6–8 hours of tuning.** Comparable to Branch A; slightly more code-mass, slightly more known surface.
 
@@ -192,9 +196,9 @@ Hour 1 is the branch point. Schedules below assume the gate has been passed.
 | Hour | Owner | Goal | Deliverable |
 |---:|---|---|---|
 | 1–3 | Backend lead | Replace `demo_loop()` with deterministic Raven Gap script + handcrafted compaction text | Script-driven replay; Replay button advances one event |
-| 1–3 | Frontend lead | Bandwidth toggle + provenance highlight scaffolding | Visible UI controls, even if not yet wired |
+| 1–3 | Frontend lead | Static Raven Gap COP panel + bandwidth toggle + provenance highlight scaffolding | Map visible, markers/pulses stubbed, controls visible even if not yet wired |
 | 3–6 | Both | Wire compaction grouping, SITREP delta, evidence-source linking | Click compaction → source events highlight |
-| 6–8 | All | Copy tune; verify deterministic SITREP looks credible at projector zoom | Demo runs end-to-end on script-only output, no LLM yet |
+| 6–8 | All | Wire COP marker state to replay/degraded mode; copy tune; verify deterministic SITREP looks credible at projector zoom | Demo runs end-to-end on script-only output, no LLM yet |
 | 8–10 | All | **Hour-10 integration gate** — full 90s flow runs end-to-end |
 | 10–12 | All | Polish: contrast, layout, readability; rehearse with pitch lead | Looks intentional at 110% zoom |
 | 12–13 | Backend lead | **(Stretch)** Optional hosted LLM brief, with the existing deterministic text as fallback | Wired only if everything else is locked |
@@ -205,7 +209,7 @@ Hour 1 is the branch point. Schedules below assume the gate has been passed.
 
 ### Branch B schedule (fallback)
 
-Per `unified-plan-v2.md` §5. Already validated; same 90s demo target; ~6–8 hours of new development.
+Per `archive/unified-plan-v2.md` §5. Already validated; same 90s demo target; ~6–8 hours of new development.
 
 ---
 
@@ -216,7 +220,7 @@ This is the "do not build, even if proposed" list, tightened:
 - ❌ Real BLE / LoRa / SDR / FHSS / ATAK plugin / Android port
 - ❌ Squad (Steam game) integration
 - ❌ S2 burst-sync uplink
-- ❌ Real on-device STT / Gemma (hosted LLM is fine)
+- ❌ Real on-device STT / Gemma (hosted LLM is stretch-only and never on the critical path)
 - ❌ Real AES-256 / dongle / PIN-derived crypto
 - ❌ Auto-promotion / pre-sealed succession envelopes
 - ❌ Heartbeat state machine
@@ -230,7 +234,7 @@ This is the "do not build, even if proposed" list, tightened:
 
 ## 8. Pitch alignment
 
-Per `docs/demo-script-v1.md`. v3 doesn't change the script — both branches execute the same 90-second storyboard.
+Per `docs/demo-script-v1.md` for the shared timing baseline, then the selected branch's demo script for exact stage choreography. Both branches execute the same 90-second product story with implementation-specific screen mechanics.
 
 The two phrases judges should remember:
 - **"Semantic compression over a tactical mesh."**
@@ -247,7 +251,7 @@ Pitch-time A/B fork (MeshNode prop vs on-device framing sentence) — defaults t
 | 1 | Ratify "TacNet Edge" as project name | **Yes** | yifu |
 | 2 | Run Hour-0 boot test on both branches in parallel | **Yes** | All |
 | 3 | If both pass, prefer Branch A | **Yes** | All |
-| 4 | Hosted LLM (OpenAI) for Branch A's commander brief | **OpenAI** | ML lead |
+| 4 | Optional hosted LLM (OpenAI) for commander prose brief | **Stretch only** | ML lead |
 | 5 | Pitch-time decision A vs B | **B** (framing sentence) | Pitch lead |
 | 6 | Backup video produced by Hour 14 | **Yes — non-negotiable** | All |
 | 7 | If Branch A boot fails, do we attempt Branch B without further debate | **Yes** | All |
@@ -262,16 +266,18 @@ Pitch-time A/B fork (MeshNode prop vs on-device framing sentence) — defaults t
 | Doc | Role |
 |---|---|
 | `docs/unified-plan-v3.md` (this) | **Canonical hackathon spec.** |
-| `docs/demo-script-v1.md` | Canonical pitch / demo storyboard. Branch-agnostic. |
-| `docs/unified-plan-v2.md` | Historical — Branch B reference scope. |
-| `docs/unified-plan.md` (v1) | Historical — superseded. |
+| `docs/demo-script-v1.md` | Shared 3-minute timing baseline. Branch-agnostic. |
+| `docs/branch-a-old-dashboard-demo-script.md` | Stage run sheet for the OLD dashboard path. |
+| `docs/branch-b-sentinel-forge-demo-script.md` | Stage run sheet for the Sentinel Forge path. |
+| `docs/archive/unified-plan-v2.md` | Historical — Branch B reference scope. |
+| `docs/archive/unified-plan.md` (v1) | Historical — superseded. |
 | `docs/meshnode-integration.md` | Decision doc: A/B/C options on MeshNode (live integration cut). |
 | `docs/tacnet-pivot-analysis.md` | Reference: original pivot reasoning. |
 | `tacnet/HACKATHON_README.md` | Long-term hackathon vision; not a build target. |
 | `tacnet/pitch deck/*` | Pitch deck for after the demo. |
 | `tacnet/strategy/*`, `tacnet/product/*`, etc. | Long-term company vision. Pitch language source. |
 
-**Single rule:** scope changes go to v3 (this doc). Demo-flow changes go to `demo-script-v1.md`. Vision/pitch ideas go to `tacnet/`.
+**Single rule:** scope changes go to v3 (this doc). Shared timing changes go to `demo-script-v1.md`. Implementation-specific click/failure-flow changes go to the selected branch's demo script. Vision/pitch ideas go to `tacnet/`.
 
 ---
 
