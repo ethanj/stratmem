@@ -22,3 +22,16 @@ localdocs/
 
 # Personal notes
 James_notes/
+
+# Node / npm (defensive — applies to any subproject)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vite / build output
+dist/
+build/
+.vite/
+*.tsbuildinfo
