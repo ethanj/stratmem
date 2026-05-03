@@ -8,14 +8,6 @@
   position: relative;
 }
 
-.map-panel-clickable {
-  cursor: pointer;
-}
-
-.map-panel-clickable:hover {
-  border-color: var(--border-bright);
-}
-
 .map-panel.risk-elevated { border-color: var(--amber-dim); }
 .map-panel.risk-critical { border-color: var(--red-dim); }
 
@@ -28,6 +20,27 @@
   letter-spacing: 0.04em;
 }
 
+.map-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-mode-btn {
+  font-size: 9px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.map-mode-btn:hover {
+  border-color: var(--border-bright);
+  color: var(--text);
+}
+
 .real-map-shell {
   flex: 1;
   position: relative;
@@ -35,13 +48,14 @@
   background: #0b1624;
 }
 
-.real-map-shell.expanded {
-  min-height: 500px;
-}
-
 .real-map {
   width: 100%;
   height: 100%;
+}
+
+/* Invert OpenTopoMap to dark tactical aesthetic (tile mode only) */
+.real-map-shell.topo-dark .real-map canvas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1);
 }
 
 /* MapLibre overrides */
@@ -139,23 +153,6 @@
   color: var(--text);
 }
 
-.map-expand-hint {
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.08em;
-  opacity: 0;
-  transition: opacity 0.15s;
-  pointer-events: none;
-}
-
-.map-panel-clickable:hover .map-expand-hint {
-  opacity: 1;
-}
-
 /* Geo markers */
 .geo-marker {
   display: flex;
@@ -178,83 +175,4 @@
 
 .geo-marker-icon {
   font-size: 12px;
-}
-
-/* Modal */
-.map-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.map-modal {
-  width: 92vw;
-  max-width: 1100px;
-  height: 85vh;
-  background: var(--panel);
-  border: 1px solid var(--border-bright);
-  border-radius: 2px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.map-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel-header);
-}
-
-.map-modal-header h2 {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: var(--text-bright);
-}
-
-.map-modal-header span {
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.map-modal-header-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.map-mode-btn {
-  font-size: 9px;
-  padding: 2px 6px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  color: var(--label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.map-mode-btn:hover {
-  border-color: var(--border-bright);
-  color: var(--text);
-}
-
-.map-modal-close {
-  font-size: 18px;
-  color: var(--muted);
-  padding: 2px 6px;
-}
-
-.map-modal-close:hover {
-  color: var(--text);
-}
-
-.map-modal-body {
-  flex: 1;
-  overflow: hidden;
 }

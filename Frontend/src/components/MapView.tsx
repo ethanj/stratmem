@@ -9,12 +9,13 @@
  * baseline so the COP is visible before source reports roll.
  *
  * Two render modes:
- * - Default: dark CARTO raster tiles + maplibre-gl pitched view.
+ * - Default: OpenTopoMap raster tiles (CSS-inverted to dark) + maplibre-gl
+ *   pitched view. Shows terrain contours and elevation shading.
  * - Static fallback: vector-only (no tiles, dark-fill background) for the
- *   network-disabled demo. Toggled by clicking the [vector] button or
- *   automatically if the raster tiles fail to load.
+ *   network-disabled demo. Toggled via the VECTOR/TILES button in the panel
+ *   header, or automatically if the raster tiles fail to load.
  *
- * Click anywhere on the panel to expand to a full-window modal.
+ * The map is always interactive inline (pan, zoom, scroll).
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -33,7 +34,6 @@ import type {
 
 const DEFAULT_CENTER: [number, number] = [-118.6818, 37.4755];
 const DEFAULT_ZOOM = 13.4;
-const EXPANDED_ZOOM = 14.0;
 const MARKER_EXIT_MS = 220;
 const RAVEN_BASELINE_MAP: MapState = {
   mgrs_grid_anchor: { easting: 42820, northing: 49210, zone: "11S LV" },
@@ -111,26 +111,25 @@ const RAVEN_CONTRACT_FIELDS = [
 const DARK_RASTER_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    "carto-dark": {
+    "topo": {
       type: "raster",
       tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+        "https://b.tile.opentopomap.org/{z}/{x}/{y}.png",
+        "https://c.tile.opentopomap.org/{z}/{x}/{y}.png",
       ],
       tileSize: 256,
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
     },
   },
   layers: [
     {
-      id: "carto-dark-layer",
+      id: "topo-layer",
       type: "raster",
-      source: "carto-dark",
+      source: "topo",
       minzoom: 0,
-      maxzoom: 20,
+      maxzoom: 17,
     },
   ],
 };
@@ -153,7 +152,6 @@ type MapViewProps = {
 };
 
 export default function MapView({ map }: MapViewProps) {
-  const [expanded, setExpanded] = useState(false);
   const [staticMode, setStaticMode] = useState(false);
 
   const displayMap = useMemo(() => normalizeRavenMap(map), [map]);
@@ -164,92 +162,32 @@ export default function MapView({ map }: MapViewProps) {
   const riskLevel = displayMap?.risk_level || (contactCount > 0 ? "elevated" : "normal");
 
   return (
-    <>
-      <div
-        className={`panel map-panel risk-${String(riskLevel).toLowerCase()} map-panel-clickable`}
-        role="button"
-        tabIndex={0}
-        onClick={() => setExpanded(true)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setExpanded(true);
-          }
-        }}
-      >
-        <div className="panel-header">
-          <h2>TACTICAL PICTURE</h2>
+    <div className={`panel map-panel risk-${String(riskLevel).toLowerCase()}`}>
+      <div className="panel-header">
+        <h2>TACTICAL PICTURE</h2>
+        <div className="map-header-controls">
+          <button
+            type="button"
+            className="map-mode-btn"
+            onClick={() => setStaticMode((s) => !s)}
+          >
+            {staticMode ? "TILES" : "VECTOR"}
+          </button>
           <span className="map-mgrs-pill">
             {mgrsZone ? `MGRS ${mgrsZone}` : "MGRS —"}
           </span>
         </div>
-
-        <div className="real-map-shell">
-          <MapCanvas map={displayMap} staticMode={staticMode} onTilesFailed={() => setStaticMode(true)} />
-          <MapOverlays
-            naiCount={naiCount}
-            friendlyCount={friendlyCount}
-            contactCount={contactCount}
-          />
-          <div className="map-expand-hint">CLICK TO EXPAND</div>
-        </div>
       </div>
 
-      {expanded && (
-        <div className="map-modal-backdrop" onClick={() => setExpanded(false)}>
-          <div className="map-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="map-modal-header">
-              <div>
-                <h2>TACTICAL PICTURE — EXPANDED</h2>
-                <span>
-                  {mgrsZone ? `MGRS ${mgrsZone}` : "MGRS —"} ·{" "}
-                  {naiCount} NAI · {friendlyCount} friendly · {contactCount} contact
-                </span>
-              </div>
-
-              <div className="map-modal-header-right">
-                <button
-                  type="button"
-                  className="map-mode-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setStaticMode((s) => !s);
-                  }}
-                >
-                  {staticMode ? "TILES" : "VECTOR"}
-                </button>
-
-                <button
-                  type="button"
-                  className="map-modal-close"
-                  onClick={() => setExpanded(false)}
-                  aria-label="Close expanded tactical picture"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-
-            <div className="map-modal-body">
-              <div className="real-map-shell expanded">
-                <MapCanvas
-                  map={displayMap}
-                  staticMode={staticMode}
-                  onTilesFailed={() => setStaticMode(true)}
-                  expanded
-                />
-
-                <MapOverlays
-                  naiCount={naiCount}
-                  friendlyCount={friendlyCount}
-                  contactCount={contactCount}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      <div className={`real-map-shell${staticMode ? "" : " topo-dark"}`}>
+        <MapCanvas map={displayMap} staticMode={staticMode} onTilesFailed={() => setStaticMode(true)} />
+        <MapOverlays
+          naiCount={naiCount}
+          friendlyCount={friendlyCount}
+          contactCount={contactCount}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -257,7 +195,6 @@ type MapCanvasProps = {
   map?: MapState | null;
   staticMode: boolean;
   onTilesFailed: () => void;
-  expanded?: boolean;
 };
 
 type MarkerDescriptor = {
@@ -274,7 +211,7 @@ type DataOverlaySnapshot = {
   riskZoneIds: Set<string>;
 };
 
-function MapCanvas({ map, staticMode, onTilesFailed, expanded = false }: MapCanvasProps) {
+function MapCanvas({ map, staticMode, onTilesFailed }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
@@ -300,16 +237,16 @@ function MapCanvas({ map, staticMode, onTilesFailed, expanded = false }: MapCanv
       container: containerRef.current,
       style: staticMode ? STATIC_VECTOR_STYLE : DARK_RASTER_STYLE,
       center,
-      zoom: expanded ? EXPANDED_ZOOM : DEFAULT_ZOOM,
-      pitch: expanded ? 36 : 30,
+      zoom: DEFAULT_ZOOM,
+      pitch: 30,
       bearing: -10,
       attributionControl: false,
       dragRotate: false,
-      scrollZoom: expanded,
-      dragPan: expanded,
-      keyboard: expanded,
-      doubleClickZoom: expanded,
-      touchZoomRotate: expanded,
+      scrollZoom: true,
+      dragPan: true,
+      keyboard: true,
+      doubleClickZoom: true,
+      touchZoomRotate: true,
     });
 
     instance.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
@@ -318,7 +255,7 @@ function MapCanvas({ map, staticMode, onTilesFailed, expanded = false }: MapCanv
     instance.on("error", (e) => {
       // Tile fetch failures bubble through here; switch to static fallback.
       const err = e?.error as { status?: number; url?: string } | undefined;
-      if (err?.url && err.url.includes("basemaps.cartocdn.com")) {
+      if (err?.url && err.url.includes("tile.opentopomap.org")) {
         onTilesFailedRef.current();
       }
     });
@@ -340,7 +277,7 @@ function MapCanvas({ map, staticMode, onTilesFailed, expanded = false }: MapCanv
       instance.remove();
       mapRef.current = null;
     };
-  }, [expanded, staticMode]);
+  }, [staticMode]);
 
   useEffect(() => {
     const instance = mapRef.current;
@@ -690,6 +627,10 @@ function removeMarker(
 
 function iconForFriendly(kind?: string): string {
   switch (kind) {
+    case "infantry":
+      return "▮";
+    case "command":
+      return "⬟";
     case "drone":
       return "◉";
     case "vehicle":
