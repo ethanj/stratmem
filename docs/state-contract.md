@@ -13,6 +13,8 @@ legacy field.
 | `POST` | `/simulate/start` | Resets the active scenario and emits one background telemetry event. |
 | `POST` | `/simulate/step` | Advances one scenario event. |
 | `GET` | `/state` | Returns the full state shape below. |
+| `POST` | `/compression/toggle` | Sets `{ "enabled": bool }` for semantic compression. |
+| `POST` | `/voice/report` | Processes `{ "audio_id": "raven_gap_salute_1" }` through the deterministic voice fixture. |
 | `POST` | `/comms/degrade` | Sets EW-degraded mode. Body: `{ "degraded": bool, "kbps"?: 3 }`. |
 | `POST` | `/reset` | Clears current state for the active scenario. |
 
@@ -41,6 +43,31 @@ legacy field.
       "geospatial": { "lat": 37.4718, "lon": -118.6821 }
     }
   ],
+  "voice_report": {
+    "audio_id": "raven_gap_salute_1",
+    "status": "ready",
+    "mode": "raw_audio",
+    "transcript": "One Alpha reports one dismount moving south near NAI 1...",
+    "structured_event_id": "rg_voice_001",
+    "schema": "salute",
+    "structured_event": {
+      "type": "salute",
+      "source": "1/A",
+      "size": "1 dismount",
+      "activity": "moving south near NAI-1",
+      "location": "11S LV 42210 49170",
+      "unit": "unknown dismount",
+      "time": "T+45",
+      "equipment": "light pack; no visible crew-served weapon",
+      "request": "uas_confirm"
+    },
+    "audio_estimated_bytes": 64000,
+    "transcript_bytes": 146,
+    "json_bytes": 241,
+    "transmit_bytes": null,
+    "fits_budget": null,
+    "blocked_reason": null
+  },
   "mesh": {
     "root": "PLT",
     "nodes": [],
@@ -102,23 +129,32 @@ legacy field.
     "routes": []
   },
   "comms": {
-    "degraded": false,
-    "kbps": null,
+    "degraded": true,
+    "kbps": 3,
     "window_sec": 10,
-    "budget_bytes": null,
+    "budget_bytes": 3750,
     "raw_bytes": 0,
     "compacted_bytes": 0,
     "compression_ratio": null,
     "fits_budget": true,
-    "source_detail_level": "full"
+    "source_detail_level": "full",
+    "compression_enabled": false
   },
   "scenario": { "id": "raven_gap", "name": "Raven Gap", "description": "..." },
   "meta": { "step": 0, "status": "running", "mode": "demo" }
 }
 ```
 
-When `/comms/degrade` is called with `{ "degraded": true }`, the backend defaults
-to `3` Kbps over a `10` second window. It computes
+The v3 demo starts on a constrained `3` Kbps link over a `10` second window.
+The backend computes
 `budget_bytes = kbps * 1000 / 8 * window_sec`, source report envelope bytes, and
 compacted summary bytes. In the Raven Gap demo state, raw source traffic exceeds
 the 3 Kbps budget while compacted summaries fit.
+
+When compression is off, `POST /voice/report` returns `voice_report.status =
+"blocked_raw"`, `mode = "raw_audio"`, `transmit_bytes = 64000`,
+`fits_budget = false`, and appends no event. After
+`POST /compression/toggle { "enabled": true }`, the same voice report returns
+`status = "processed"`, `mode = "compressed_json"`, `transmit_bytes = json_bytes`,
+`fits_budget = true`, appends `rg_voice_001` exactly once, and reruns the
+pipeline.

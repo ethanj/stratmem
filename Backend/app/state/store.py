@@ -13,6 +13,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Optional
 
+from app.voice.salute_extractor import build_voice_report
+
 
 DEFAULT_SCENARIO = {
     "id": "coordinated_intrusion",
@@ -133,13 +135,14 @@ def build_comms_proof(
 
 
 def build_default_comms() -> dict[str, Any]:
-    """Build the default non-degraded comms state."""
+    """Build the default v3 degraded-link comms state."""
     return {
-        "degraded": False,
-        "kbps": None,
+        "degraded": True,
+        "kbps": DEGRADED_COMMS_KBPS,
         "window_sec": COMMS_WINDOW_SECONDS,
-        **build_comms_proof(),
+        **build_comms_proof(kbps=DEGRADED_COMMS_KBPS),
         "source_detail_level": "full",
+        "compression_enabled": False,
     }
 
 
@@ -155,6 +158,7 @@ def build_initial_state(scenario: Optional[dict[str, Any]] = None) -> dict[str, 
         "mesh": build_default_mesh(),
         "compactions": [],
         "sitrep_delta": build_empty_sitrep_delta(),
+        "voice_report": build_voice_report(),
         "comms": build_default_comms(),
         "scenario": scenario or DEFAULT_SCENARIO,
         "meta": {
@@ -200,9 +204,10 @@ def _merge_comms(comms: Optional[dict[str, Any]]) -> dict[str, Any]:
     if "window_seconds" in merged:
         merged["window_sec"] = merged.pop("window_seconds")
 
-    merged["source_detail_level"] = (
-        "reduced" if merged.get("degraded") else "full"
-    )
+    if not merged.get("source_detail_level"):
+        merged["source_detail_level"] = (
+            "reduced" if merged.get("degraded") else "full"
+        )
 
     return merged
 
@@ -251,6 +256,7 @@ class StateStore:
         return self.get()
 
     def set_comms(self, degraded: bool, kbps: Optional[float] = None) -> dict[str, Any]:
+        current = self._state.get("comms", {})
         link_kbps = kbps if kbps is not None else DEGRADED_COMMS_KBPS
         if not degraded:
             link_kbps = None
@@ -261,7 +267,18 @@ class StateStore:
             "window_sec": COMMS_WINDOW_SECONDS,
             **build_comms_proof(kbps=link_kbps),
             "source_detail_level": "reduced" if degraded else "full",
+            "compression_enabled": bool(current.get("compression_enabled")),
         }
+        return self.get()
+
+    def set_compression_enabled(self, enabled: bool) -> dict[str, Any]:
+        comms = _merge_comms(self._state.get("comms"))
+        comms["compression_enabled"] = enabled
+        self._state["comms"] = comms
+        return self.get()
+
+    def set_voice_report(self, report: dict[str, Any]) -> dict[str, Any]:
+        self._state["voice_report"] = deepcopy(report)
         return self.get()
 
     def apply_pipeline_result(self, result: dict[str, Any]) -> dict[str, Any]:
@@ -290,7 +307,7 @@ class StateStore:
             self._state["map_state"] = result.get("map_state") or build_empty_map_state()
 
     def _apply_tacnet_result(self, result: dict[str, Any]) -> None:
-        for key in ("mesh", "compactions", "sitrep_delta"):
+        for key in ("mesh", "compactions", "sitrep_delta", "voice_report"):
             if key in result:
                 self._state[key] = deepcopy(result.get(key))
 
@@ -325,6 +342,7 @@ class StateStore:
         self._state.setdefault("mesh", build_default_mesh())
         self._state.setdefault("compactions", [])
         self._state.setdefault("sitrep_delta", build_empty_sitrep_delta())
+        self._state.setdefault("voice_report", build_voice_report())
         self._state["comms"] = _merge_comms(self._state.get("comms"))
 
     def set_incident_action_status(

@@ -26,6 +26,11 @@ from app.core.scenario import (
 )
 from app.generator.background_events import build_background_event
 from app.state.store import StateStore
+from app.voice.salute_extractor import (
+    build_voice_report,
+    extract_salute,
+    voice_event_payload,
+)
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -59,6 +64,14 @@ class IncidentActionUpdateRequest(BaseModel):
 class CommsDegradeRequest(BaseModel):
     degraded: bool
     kbps: Optional[float] = None
+
+
+class CompressionToggleRequest(BaseModel):
+    enabled: bool
+
+
+class VoiceReportRequest(BaseModel):
+    audio_id: str
 
 
 def current_scenario() -> dict:
@@ -178,10 +191,85 @@ def degrade_comms(payload: CommsDegradeRequest):
     return store.replace(state)
 
 
+@app.post("/compression/toggle")
+def toggle_compression(payload: CompressionToggleRequest):
+    state = store.set_compression_enabled(payload.enabled)
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
+@app.post("/voice/report")
+def voice_report(payload: VoiceReportRequest):
+    validate_voice_audio(payload.audio_id)
+    state = store.get()
+
+    if not state.get("comms", {}).get("compression_enabled"):
+        return block_raw_voice_report(state)
+
+    return process_compressed_voice_report(payload.audio_id, state)
+
+
 @app.post("/reset")
 def reset():
     reset_adapter()
     return store.reset(scenario=current_scenario())
+
+
+def validate_voice_audio(audio_id: str) -> None:
+    try:
+        extract_salute(audio_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Voice fixture not found") from exc
+
+
+def block_raw_voice_report(state: dict) -> dict:
+    base_report = build_voice_report()
+    state["voice_report"] = build_voice_report(
+        status="blocked_raw",
+        mode="raw_audio",
+        transmit_bytes=base_report["audio_estimated_bytes"],
+        fits_budget=False,
+        blocked_reason="raw audio exceeds 3 Kbps / 10 sec budget",
+    )
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
+def process_compressed_voice_report(audio_id: str, state: dict) -> dict:
+    event_payload = voice_event_payload(audio_id)
+    base_report = build_voice_report()
+    state["voice_report"] = build_voice_report(
+        status="processed",
+        mode="compressed_json",
+        transmit_bytes=base_report["json_bytes"],
+        fits_budget=True,
+    )
+    state["events"] = upsert_event(state.get("events", []), event_payload)
+    state = store.replace(state)
+    state = run_and_apply_pipeline(state)
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
+def upsert_event(
+    events: list[dict],
+    event_payload: dict,
+) -> list[dict]:
+    event_id = event_payload.get("id")
+    replaced = False
+    updated_events = []
+
+    for event in events:
+        if event.get("id") == event_id:
+            updated_events.append(event_payload)
+            replaced = True
+            continue
+        updated_events.append(event)
+
+    if not replaced:
+        updated_events.append(event_payload)
+
+    return updated_events
 
 
 

@@ -150,17 +150,22 @@ def normalize_comms(comms: dict[str, Any] | None) -> dict[str, Any]:
     comms_state = dict(comms or {})
     degraded = bool(comms_state.get("degraded"))
     kbps = comms_state.get("kbps")
+    source_detail_level = comms_state.get("source_detail_level")
 
     if degraded and kbps is None:
         kbps = DEGRADED_COMMS_KBPS
     elif not degraded:
         kbps = None
 
+    if not source_detail_level:
+        source_detail_level = "reduced" if degraded else "full"
+
     return {
         "degraded": degraded,
         "kbps": kbps,
         "window_sec": int(comms_state.get("window_sec") or COMMS_WINDOW_SECONDS),
-        "source_detail_level": "reduced" if degraded else "full",
+        "source_detail_level": source_detail_level,
+        "compression_enabled": bool(comms_state.get("compression_enabled")),
     }
 
 
@@ -169,7 +174,7 @@ def apply_degraded_event_detail(
     comms: dict[str, Any],
 ) -> list[dict[str, Any]]:
     """Trim event messages when degraded mode is active."""
-    if not comms.get("degraded"):
+    if comms.get("source_detail_level") != "reduced":
         return events
 
     return [
