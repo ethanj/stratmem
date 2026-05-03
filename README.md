@@ -36,8 +36,7 @@ The transmitted payload is not raw microphone audio and not the full transcript.
 Backend/      FastAPI backend, Raven Gap state, receiver decode API
 Frontend/     React + Vite S2 dashboard and embedded WebRTC receiver
 prototype/    Browser sender prototype, signaling server, local STT path
-localdocs/    Local-only planning/reference docs, ignored by Git
-docs/         Local-only docs if present, ignored by Git
+tacnet/       Reference material kept in the repo
 ```
 
 ## Local Quick Start
