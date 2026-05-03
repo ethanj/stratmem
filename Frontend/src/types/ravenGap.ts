@@ -57,24 +57,37 @@ export interface SitrepDelta {
   what_changed: string[];
 }
 
+/**
+ * Minimal comms contract per docs/THEPLAN.md. Backend (A) only ships
+ * `degraded` and `source_detail_level`; the bandwidth meter computes
+ * raw_bytes / compacted_bytes / budget / ratio locally from `events` and
+ * `compactions` so we don't need A to wire byte counters.
+ */
 export interface Comms {
   degraded: boolean;
-  /** Link budget in kbps when degraded; null when full link. */
-  kbps: number | null;
-  /** Sliding window the budget is computed over. */
+  /** "full" | "reduced" — drives source-feed detail when degraded. */
+  source_detail_level: "full" | "reduced" | string;
+}
+
+/**
+ * Locally-derived bandwidth metrics displayed in DegradedCommsToggle. NOT
+ * shipped over the wire; computed in the component from events + compactions.
+ */
+export interface BandwidthMeter {
+  /** Link rate in kbps (display-only). */
+  kbps: number;
+  /** Sliding window in seconds. */
   window_sec: number;
-  /** Bytes that fit the current link in `window_sec`; null when not degraded. */
-  budget_bytes: number | null;
-  /** Raw source-traffic bytes in the window. */
+  /** Bytes that fit the link in `window_sec`. */
+  budget_bytes: number;
+  /** Sum of message lengths across the window. */
   raw_bytes: number;
-  /** Compacted bytes (post squad-summary) in the window. */
+  /** Sum of compaction summary lengths across the window. */
   compacted_bytes: number;
-  /** raw_bytes / compacted_bytes when both > 0; null otherwise. */
+  /** raw / compacted when both > 0. */
   compression_ratio: number | null;
-  /** True iff compacted_bytes <= budget_bytes (or not degraded). */
+  /** compacted_bytes ≤ budget_bytes. */
   fits_budget: boolean;
-  /** Detail level the source feed renders at: "full" | "compact" | etc. */
-  source_detail_level: "full" | "compact" | string;
 }
 
 export interface EvidenceLine {
@@ -117,6 +130,78 @@ export interface RavenGapStateSlice {
   compactions?: Compaction[];
   sitrep_delta?: SitrepDelta;
   comms?: Comms;
+}
+
+/**
+ * Map state — the geographic command picture. Coordinates are named keys
+ * `{lat, lon}` (not positional arrays) per THEPLAN to remove [lon,lat] vs
+ * [lat,lon] ambiguity.
+ */
+export interface LatLon {
+  lat: number;
+  lon: number;
+}
+
+export interface MgrsAnchor {
+  easting: number;
+  northing: number;
+  zone: string;
+}
+
+export interface PhaseLine {
+  id: string;
+  label: string;
+  points: LatLon[];
+}
+
+export interface Checkpoint extends LatLon {
+  id: string;
+  label: string;
+}
+
+export interface NamedAreaOfInterest {
+  id: string;
+  label: string;
+  polygon: LatLon[];
+}
+
+export interface FriendlyMarker extends LatLon {
+  id: string;
+  label: string;
+  kind?: string;
+}
+
+export interface ContactConfidence {
+  /** "suspected" | "confirmed" | "lost". */
+  confidence: "suspected" | "confirmed" | "lost" | string;
+}
+
+export interface ContactMarker extends LatLon, ContactConfidence {
+  id: string;
+  label: string;
+}
+
+export interface RiskZone extends LatLon {
+  id: string;
+  label?: string;
+  /** Radius in meters. */
+  radius_m: number;
+}
+
+export interface MapState {
+  mgrs_grid_anchor?: MgrsAnchor;
+  phase_line?: PhaseLine[];
+  checkpoints?: Checkpoint[];
+  nais?: NamedAreaOfInterest[];
+  friendly_markers?: FriendlyMarker[];
+  contact_markers?: ContactMarker[];
+  risk_zones?: RiskZone[];
+  routes?: unknown[];
+  /** Existing Sentinel Forge fields preserved for legacy paths. */
+  tracks?: unknown[];
+  threat_paths?: unknown[];
+  assets?: unknown[];
+  risk_level?: string;
 }
 
 /**

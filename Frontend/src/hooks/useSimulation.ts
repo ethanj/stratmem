@@ -166,7 +166,7 @@ export function useSimulation() {
   const toggleDegraded = async (degraded: boolean) => {
     setIsBusy(true);
     try {
-      const data = await setCommsDegraded(degraded, 3);
+      const data = await setCommsDegraded(degraded);
       const current = stateRef.current;
       const next: SimulationState = {
         ...current,

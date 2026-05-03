@@ -87,12 +87,12 @@ export default function IncidentCard({
     return (
       <div className="panel incident-panel empty">
         <div className="panel-header">
-          <h2>INCIDENT ASSESSMENT</h2>
+          <h2>COMMANDER SITREP</h2>
         </div>
 
         <div className="incident-empty-body">
-          <h3>No active incident</h3>
-          <p>System is monitoring incoming signals.</p>
+          <h3>No active SITREP</h3>
+          <p>Awaiting source reports from the mesh.</p>
         </div>
       </div>
     );
@@ -215,7 +215,7 @@ export default function IncidentCard({
         }}
       >
         <div className="panel-header">
-          <h2>INCIDENT ASSESSMENT</h2>
+          <h2>COMMANDER SITREP</h2>
           <span className="incident-status">STATUS: {incidentStatus}</span>
         </div>
 
@@ -300,7 +300,7 @@ export default function IncidentCard({
           >
             <div className="incident-modal-header">
               <div>
-                <span>INCIDENT ID: {incident.id}</span>
+                <span>SITREP ID: {incident.id}</span>
                 <h2>
                   {severity.toUpperCase()} —{" "}
                   {String(incident.type || "Incident").toUpperCase()}

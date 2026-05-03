@@ -13,8 +13,10 @@ All keys below are additive on top of the existing `/state` response. Nothing in
 | `mesh` | `Mesh` | `MeshTree.tsx` |
 | `compactions` | `Compaction[]` | `CompactionTimeline.tsx` |
 | `sitrep_delta` | `SitrepDelta` | `SitrepDeltaPanel.tsx` |
-| `comms` | `Comms` | `DegradedCommsToggle.tsx` |
+| `comms` | `{ degraded, source_detail_level }` | `DegradedCommsToggle.tsx` (bandwidth meter is computed locally) |
+| `map_state` | `MapState` | `MapView.tsx` (NAIs, phase line, checkpoints, friendly/contact/risk markers) |
 | `incident.evidence_lines` | `EvidenceLine[]` | `IncidentCard.tsx` (clickable rows) → `EvidenceDrawer.tsx` |
+| `incident.timestamp` | `"T+NN"` string | `IncidentCard.tsx` |
 | `events[].metadata.sender_id` | `string` | `MeshTree` (leaf lighting), `LogStream` |
 | `events[].metadata.background` | `boolean` | `LogStream` (filter telemetry out of main feed) |
 | `events[].metadata.unit_label` | `string` | `LogStream` (display) |
@@ -74,31 +76,22 @@ All keys below are additive on top of the existing `/state` response. Nothing in
 }
 ```
 
-## Comms (EW-degraded budget)
+## Comms (EW-degraded mode)
+
+Per `docs/THEPLAN.md`, the backend ships only two fields:
 
 ```jsonc
 {
   "comms": {
     "degraded": false,
-    "kbps": null,
-    "window_sec": 10,
-    "budget_bytes": null,
-    "raw_bytes": 18420,
-    "compacted_bytes": 2870,
-    "compression_ratio": null,
-    "fits_budget": true,
     "source_detail_level": "full"
   }
 }
 ```
 
-When `degraded === true`:
+When `degraded === true`, `source_detail_level` switches to `"reduced"` and A trims `events[*].message` and `compactions[*].summary` to short forms (per THEPLAN §State Contract / "Degraded behavior"). `incident` (SITREP) and `sitrep_delta` remain fully populated.
 
-- `kbps` is the link rate (default `3` for the Raven Gap demo).
-- `budget_bytes = round(kbps * 1000 * window_sec / 8)`.
-- `compression_ratio = raw_bytes / compacted_bytes` (rounded to 2dp).
-- `fits_budget = compacted_bytes <= budget_bytes`.
-- `source_detail_level` should switch to `"compact"` so the LogStream / map can render reduced detail.
+The bandwidth meter visible in `DegradedCommsToggle` (raw vs compacted vs 3 kbps budget, compression ratio) is **computed locally on the frontend** from `state.events` and `state.compactions` — A does not need to wire byte counters.
 
 ## Incident.evidence_lines
 
@@ -106,6 +99,8 @@ When `degraded === true`:
 {
   "incident": {
     "id": "sitrep_002",
+    "type": "Commander SITREP",
+    "timestamp": "T+75",
     "evidence_lines": [
       { "text": "Contact: 2x dismounts NAI 1, weapons observed", "evidence_ids": ["rg_001", "rg_004"] },
       { "text": "RQ-11 SATCOM denied; LoRa fallback active", "evidence_ids": ["rg_012"] }
@@ -115,6 +110,48 @@ When `degraded === true`:
 ```
 
 Each `evidence_ids` entry must reference an id in `events[]`. Clicking a line in `IncidentCard` emits the line's `evidence_ids` to `EvidenceDrawer`.
+
+`incident.timestamp` is a relative-elapsed string (`"T+75"` = 75 seconds since the start of the replay), per THEPLAN. Existing legacy fields (`active_risk`, `confidence`, `detection_confidence`, `why`, `signals`) must also be populated by the synthesizer or `IncidentCard` shows zeros.
+
+## Map state
+
+`MapView` renders the geographic command picture entirely from `state.map_state`. Coordinates are named keys `{lat, lon}`, never positional arrays.
+
+```jsonc
+{
+  "map_state": {
+    "mgrs_grid_anchor": { "easting": 12000, "northing": 67000, "zone": "11SLT" },
+    "phase_line": [
+      { "id": "pl_blue", "label": "PHASE LINE BLUE",
+        "points": [{ "lat": 36.108, "lon": -115.430 }, { "lat": 36.180, "lon": -115.430 }] }
+    ],
+    "checkpoints": [{ "id": "cp_1", "label": "CP-1", "lat": 36.118, "lon": -115.460 }],
+    "nais": [
+      { "id": "nai_1", "label": "NAI 1",
+        "polygon": [
+          { "lat": 36.119, "lon": -115.460 },
+          { "lat": 36.119, "lon": -115.452 },
+          { "lat": 36.127, "lon": -115.452 },
+          { "lat": 36.127, "lon": -115.460 }
+        ] }
+    ],
+    "friendly_markers": [
+      { "id": "1st_squad_team_a", "label": "1/A", "lat": 36.118, "lon": -115.461, "kind": "infantry" },
+      { "id": "rq_11", "label": "RQ-11", "lat": 36.131, "lon": -115.451, "kind": "drone" }
+    ],
+    "contact_markers": [
+      { "id": "ctc_nai1_1", "label": "?", "lat": 36.123, "lon": -115.456, "confidence": "confirmed" }
+    ],
+    "risk_zones": [
+      { "id": "rz_nai1", "label": "NAI 1 RISK", "lat": 36.123, "lon": -115.456, "radius_m": 250 }
+    ]
+  }
+}
+```
+
+`friendly_markers[*].kind` shapes the marker icon: `"drone"`, `"vehicle"`, `"sensor"`, `"weapons"`, `"uas_team"`, or `"infantry"` (default). `contact_markers[*].confidence` is `"suspected" | "confirmed" | "lost"` and shapes opacity / border style.
+
+When `comms.degraded === true`, A may drop low-confidence contact markers (per THEPLAN §State Contract / "Degraded behavior") to reflect reduced collection. The frontend handles missing keys gracefully — drop the array entirely rather than sending `null` per element.
 
 ## Event metadata extensions
 
@@ -149,10 +186,10 @@ Notes:
 Request:
 
 ```jsonc
-{ "degraded": true, "kbps": 3 }
+{ "degraded": true }
 ```
 
-Response: the canonical state dict with `comms` updated. Frontend currently falls back to a local stub if this endpoint 404s, so partial implementation is OK during integration.
+Response: the canonical state dict with `comms` updated. Frontend falls back to a local stub if this endpoint 404s, so partial implementation is OK during integration.
 
 ## Raven Gap scenario registration
 

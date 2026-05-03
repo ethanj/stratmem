@@ -1,9 +1,12 @@
 // components/SignalBreakdown.tsx
-// TODO(team-b): full TacNet vocabulary pass against B's delivered list.
-// Light-touch relabels in SIGNAL_DEFINITIONS below mirror Raven Gap callsigns
-// (UAS Contact, Maritime Track, Perimeter Breach) per docs/THEPLAN.md and
-// docs/tacnet-pivot-analysis.md. Keep `kind` keys stable — they bind to the
-// backend correlation signals, not display.
+// Repurposed for Raven Gap per docs/THEPLAN.md. SIGNAL_DEFINITIONS now models
+// platoon-relevant indicators (Confirmed Contact, Vehicle Activity, EW
+// Degradation, Mesh Partition, Sensor Trigger, ACE/PLI status, etc.) instead
+// of the legacy cyber set.
+//
+// TODO(team-b): refine wording / icons against B's full vocabulary list when
+// delivered. The `kind` keys are display-bound here (Raven Gap doesn't run
+// the cyber correlation engine), so renaming them is a vocab-only change.
 
 type Signal = {
   id: string;
@@ -34,86 +37,86 @@ type Props = {
 
 const SIGNAL_DEFINITIONS: SignalDefinition[] = [
   {
-    kind: "auth.failed_burst",
-    label: "Failed Auth Burst",
-    description: "Multiple failed admin authentication attempts observed",
-    tone: "auth",
-    icon: "▣",
+    kind: "contact.confirmed",
+    label: "Confirmed Contact",
+    description: "Two or more SALUTE reports corroborate at a single NAI",
+    tone: "auth-failure",
+    icon: "✕",
   },
   {
-    kind: "auth.anomalous_login",
-    label: "Anomalous Login",
-    description: "Successful login occurred from an unfamiliar source",
+    kind: "contact.suspected",
+    label: "Suspected Contact",
+    description: "Single source report indicates possible contact",
     tone: "anomaly",
     icon: "●",
   },
   {
-    kind: "network.lateral_movement",
-    label: "Lateral Movement",
-    description: "Rapid access across internal nodes suggests active intrusion",
+    kind: "vehicle.activity",
+    label: "Vehicle Activity",
+    description: "UAS or sensor indicates vehicle movement near AO",
     tone: "lateral",
-    icon: "⌬",
+    icon: "▭",
   },
   {
-    kind: "identity.privilege_escalation",
-    label: "Privilege Escalation",
-    description: "Identity activity suggests attempted privilege escalation",
+    kind: "uas.observation",
+    label: "UAS Observation",
+    description: "RQ-11 spot of activity in a NAI of interest",
+    tone: "drone",
+    icon: "◉",
+  },
+  {
+    kind: "sensor.trigger",
+    label: "Sensor Trigger",
+    description: "OP/LP ground sensor S7 motion trigger",
     tone: "privilege",
     icon: "✦",
   },
   {
-    kind: "network.data_exfiltration",
-    label: "Data Exfiltration",
-    description: "Unusual outbound transfer suggests possible exfiltration",
+    kind: "ew.degradation",
+    label: "EW Degradation",
+    description: "SATCOM denied or radio intermittent; mesh on LoRa fallback",
     tone: "exfil",
-    icon: "☁",
-  },
-  {
-    kind: "physical.drone_recon",
-    label: "UAS Contact",
-    description: "UAS observation near protected zone or NAI",
-    tone: "drone",
     icon: "⌁",
   },
   {
-    kind: "osint.ais_anomaly",
-    label: "Maritime Track",
-    description: "AIS behavior indicates anomalous vessel activity",
+    kind: "mesh.partition",
+    label: "Mesh Partition",
+    description: "Mesh leaf unreachable from PL for > 60s",
     tone: "ais",
     icon: "◈",
   },
   {
-    kind: "malware.signature",
-    label: "Malware Signature",
-    description: "No matching malware signatures detected",
+    kind: "ace.amber",
+    label: "ACE Amber/Red",
+    description: "ACE/LACE report indicates ammo, casualty, or equipment shortfall",
     tone: "inactive",
-    icon: "⌘",
+    icon: "◐",
   },
   {
-    kind: "network.port_scan",
-    label: "Port Scan",
-    description: "No port scanning detected",
-    tone: "inactive",
-    icon: "⌗",
-  },
-  {
-    kind: "network.beaconing",
-    label: "Beaconing Activity",
-    description: "No beaconing detected",
-    tone: "inactive",
-    icon: "⌁",
-  },
-  {
-    kind: "insider.threat",
-    label: "Insider Threat",
-    description: "No insider threat indicators detected",
+    kind: "pli.stale",
+    label: "Stale PLI",
+    description: "Position-location-info gap exceeds threshold",
     tone: "inactive",
     icon: "◌",
   },
   {
-    kind: "physical.breach",
+    kind: "comms.loss",
+    label: "Comms Loss",
+    description: "Specific unit unreachable; mesh routes around it",
+    tone: "inactive",
+    icon: "⌗",
+  },
+  {
+    kind: "indirect.fire",
+    label: "Indirect Fire",
+    description: "Pattern indicates incoming or registered indirect fire",
+    tone: "inactive",
+    icon: "✷",
+  },
+  {
+    kind: "perimeter.breach",
     label: "Perimeter Breach",
-    description: "No perimeter breach detected at OP/LP picket line",
+    description: "Friendly perimeter or OP/LP picket line broken",
     tone: "inactive",
     icon: "◇",
   },
@@ -156,12 +159,12 @@ export default function SignalBreakdown({
   return (
     <div className="panel signal-panel">
       <div className="panel-header">
-        <h2>SIGNAL BREAKDOWN</h2>
+        <h2>TACNET INDICATORS</h2>
         <span className="active-count">{activeSignals.length} / 12 ACTIVE</span>
       </div>
 
       <div className="signal-table-head">
-        <span>SIGNAL</span>
+        <span>INDICATOR</span>
         <span>STATUS</span>
         <span>EVIDENCE</span>
       </div>

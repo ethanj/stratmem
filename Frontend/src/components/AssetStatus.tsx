@@ -104,7 +104,7 @@ export default function AssetStatus({ assets }: Props) {
   return (
     <div className="panel asset-panel">
       <div className="panel-header">
-        <h2>ASSET STATUS</h2>
+        <h2>FORCE PICTURE</h2>
         <span>{headerText}</span>
       </div>
 

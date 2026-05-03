@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "../styles/topbar.css";
 import DegradedCommsToggle from "./DegradedCommsToggle";
-import type { Comms } from "../types/ravenGap";
+import type { Comms, Compaction, RavenGapEvent } from "../types/ravenGap";
 
 type MaybePromise<T = void> = T | Promise<T>;
 
@@ -26,6 +26,8 @@ type Props = {
 
   /** Raven Gap EW-degraded controls. */
   comms?: Comms;
+  events?: RavenGapEvent[];
+  compactions?: Compaction[];
   onToggleDegraded?: (degraded: boolean) => void | Promise<unknown>;
   /** Hide the scenario selector dropdown for the Raven Gap demo. */
   showScenarioSelector?: boolean;
@@ -63,6 +65,8 @@ export default function TopBar({
   selectedScenarioId = "coordinated_intrusion",
   onScenarioChange,
   comms,
+  events,
+  compactions,
   onToggleDegraded,
   showScenarioSelector = false,
 }: Props) {
@@ -176,6 +180,8 @@ export default function TopBar({
       {onToggleDegraded && (
         <DegradedCommsToggle
           comms={comms}
+          events={events}
+          compactions={compactions}
           onChange={onToggleDegraded}
           disabled={isBusy}
         />

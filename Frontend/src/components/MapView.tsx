@@ -1,55 +1,39 @@
-// components/MapView.tsx
+/**
+ * @file MapView — Raven Gap tactical command picture.
+ *
+ * Renders the geographic command picture from `state.map_state` per
+ * docs/THEPLAN.md: NAIs (polygons), phase line, checkpoints, friendly
+ * markers, contact markers (with confidence shading), risk zones (radius
+ * circles), and an optional MGRS grid label. All coordinates come from
+ * `state.map_state`; nothing is hardcoded.
+ *
+ * Two render modes:
+ * - Default: dark CARTO raster tiles + maplibre-gl pitched view.
+ * - Static fallback: vector-only (no tiles, dark-fill background) for the
+ *   network-disabled demo. Toggled by clicking the [vector] button or
+ *   automatically if the raster tiles fail to load.
+ *
+ * Click anywhere on the panel to expand to a full-window modal.
+ */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import type { FeatureCollection, LineString, Polygon } from "geojson";
+import type { Feature, FeatureCollection, LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "../styles/map.css";
+import type {
+  LatLon,
+  MapState,
+  NamedAreaOfInterest,
+  PhaseLine,
+  RiskZone,
+} from "../types/ravenGap";
 
-const GATEWAY: [number, number] = [-122.4108, 37.7794];
-const HQ_NODE: [number, number] = [-122.3694, 37.7936];
+const DEFAULT_CENTER: [number, number] = [-115.452, 36.124];
+const DEFAULT_ZOOM = 13.4;
+const EXPANDED_ZOOM = 14.0;
 
-/**
- * Sector B is the protected perimeter / defended zone.
- * Threat contacts should appear around it, not directly on top of it.
- */
-const SECTOR_B: [number, number] = [-122.3134, 37.8258];
-
-const UAS_START: [number, number] = [-122.3625, 37.7082];
-const UAS_MID: [number, number] = [-122.3382, 37.7654];
-
-const UAS_CONTACTS: Array<{
-  id: string;
-  label: string;
-  icon: string;
-  position: [number, number];
-}> = [
-  {
-    id: "uas-01",
-    label: "UAS-01",
-    icon: "◉",
-    position: [-122.3218, 37.8138],
-  },
-  {
-    id: "uas-02",
-    label: "UAS-02",
-    icon: "◌",
-    position: [-122.3028, 37.8335],
-  },
-  {
-    id: "uas-03",
-    label: "UAS-03",
-    icon: "◍",
-    position: [-122.3308, 37.8425],
-  },
-];
-
-const UAS_APPROACH_POINT: [number, number] = UAS_CONTACTS[0].position;
-
-const VESSEL_START: [number, number] = [-122.5102, 37.8382];
-const VESSEL_MID: [number, number] = [-122.432, 37.832];
-const VESSEL_CURRENT: [number, number] = [-122.3364, 37.824];
-
-const DARK_RASTER_STYLE: any = {
+const DARK_RASTER_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
     "carto-dark": {
@@ -76,47 +60,37 @@ const DARK_RASTER_STYLE: any = {
   ],
 };
 
-type MapViewProps = {
-  map: any;
+/** Vector-only style with no external tiles — works fully offline. */
+const STATIC_VECTOR_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [
+    {
+      id: "background",
+      type: "background",
+      paint: { "background-color": "#0b1624" },
+    },
+  ],
 };
 
-type MapCanvasProps = {
-  hasDrone: boolean;
-  hasVessel: boolean;
-  isElevated: boolean;
-  expanded?: boolean;
+type MapViewProps = {
+  map?: MapState | null;
 };
 
 export default function MapView({ map }: MapViewProps) {
   const [expanded, setExpanded] = useState(false);
+  const [staticMode, setStaticMode] = useState(false);
 
-  const tracks = map?.tracks || [];
-  const threatPaths = map?.threat_paths || [];
-  const riskLevel = map?.risk_level || map?.risk || "normal";
-
-  const hasDrone = useMemo(() => {
-    return (
-      tracks.some((track: any) => track.kind === "physical.drone") ||
-      tracks.some((track: any) => String(track.kind || "").includes("drone")) ||
-      threatPaths.some((path: any) => path.kind === "physical_path")
-    );
-  }, [tracks, threatPaths]);
-
-  const hasVessel = useMemo(() => {
-    return (
-      tracks.some((track: any) => track.kind === "osint.ais_anomaly") ||
-      tracks.some((track: any) => String(track.kind || "").includes("ais")) ||
-      tracks.some((track: any) => String(track.kind || "").includes("vessel")) ||
-      threatPaths.some((path: any) => path.kind === "osint_path")
-    );
-  }, [tracks, threatPaths]);
-
-  const isElevated = ["medium", "high", "critical"].includes(riskLevel);
+  const mgrsZone = map?.mgrs_grid_anchor?.zone;
+  const naiCount = map?.nais?.length ?? 0;
+  const friendlyCount = map?.friendly_markers?.length ?? 0;
+  const contactCount = map?.contact_markers?.length ?? 0;
+  const riskLevel = map?.risk_level || (contactCount > 0 ? "elevated" : "normal");
 
   return (
     <>
       <div
-        className={`panel map-panel risk-${riskLevel} map-panel-clickable`}
+        className={`panel map-panel risk-${String(riskLevel).toLowerCase()} map-panel-clickable`}
         role="button"
         tabIndex={0}
         onClick={() => setExpanded(true)}
@@ -128,20 +102,19 @@ export default function MapView({ map }: MapViewProps) {
         }}
       >
         <div className="panel-header">
-          <h2>OPERATIONAL VIEW</h2>
-          <span className={`map-risk-badge ${riskLevel}`}>
-            RISK: {String(riskLevel).toUpperCase()}
+          <h2>TACTICAL PICTURE</h2>
+          <span className="map-mgrs-pill">
+            {mgrsZone ? `MGRS ${mgrsZone}` : "MGRS —"}
           </span>
         </div>
 
         <div className="real-map-shell">
-          <MapCanvas
-            hasDrone={hasDrone}
-            hasVessel={hasVessel}
-            isElevated={isElevated}
+          <MapCanvas map={map} staticMode={staticMode} onTilesFailed={() => setStaticMode(true)} />
+          <MapOverlays
+            naiCount={naiCount}
+            friendlyCount={friendlyCount}
+            contactCount={contactCount}
           />
-
-          <MapOverlays />
           <div className="map-expand-hint">CLICK TO EXPAND</div>
         </div>
       </div>
@@ -151,20 +124,30 @@ export default function MapView({ map }: MapViewProps) {
           <div className="map-modal" onClick={(event) => event.stopPropagation()}>
             <div className="map-modal-header">
               <div>
-                <h2>EXPANDED OPERATIONAL VIEW</h2>
-                <span>Live cyber / physical / OSINT mission picture</span>
+                <h2>TACTICAL PICTURE — EXPANDED</h2>
+                <span>
+                  {mgrsZone ? `MGRS ${mgrsZone}` : "MGRS —"} ·{" "}
+                  {naiCount} NAI · {friendlyCount} friendly · {contactCount} contact
+                </span>
               </div>
 
               <div className="map-modal-header-right">
-                <span className={`map-risk-badge ${riskLevel}`}>
-                  RISK: {String(riskLevel).toUpperCase()}
-                </span>
+                <button
+                  type="button"
+                  className="map-mode-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setStaticMode((s) => !s);
+                  }}
+                >
+                  {staticMode ? "TILES" : "VECTOR"}
+                </button>
 
                 <button
                   type="button"
                   className="map-modal-close"
                   onClick={() => setExpanded(false)}
-                  aria-label="Close expanded operational view"
+                  aria-label="Close expanded tactical picture"
                 >
                   ×
                 </button>
@@ -174,20 +157,17 @@ export default function MapView({ map }: MapViewProps) {
             <div className="map-modal-body">
               <div className="real-map-shell expanded">
                 <MapCanvas
-                  hasDrone={hasDrone}
-                  hasVessel={hasVessel}
-                  isElevated={isElevated}
+                  map={map}
+                  staticMode={staticMode}
+                  onTilesFailed={() => setStaticMode(true)}
                   expanded
                 />
 
-                <MapOverlays />
-
-                <div className="map-layer-readout">
-                  <span className="active">CYBER</span>
-                  <span className={hasDrone ? "active warning" : ""}>UAS</span>
-                  <span className={hasVessel ? "active cyan" : ""}>AIS</span>
-                  <span className={isElevated ? "active danger" : ""}>FUSION</span>
-                </div>
+                <MapOverlays
+                  naiCount={naiCount}
+                  friendlyCount={friendlyCount}
+                  contactCount={contactCount}
+                />
               </div>
             </div>
           </div>
@@ -197,27 +177,33 @@ export default function MapView({ map }: MapViewProps) {
   );
 }
 
-function MapCanvas({
-  hasDrone,
-  hasVessel,
-  isElevated,
-  expanded = false,
-}: MapCanvasProps) {
+type MapCanvasProps = {
+  map?: MapState | null;
+  staticMode: boolean;
+  onTilesFailed: () => void;
+  expanded?: boolean;
+};
+
+function MapCanvas({ map, staticMode, onTilesFailed, expanded = false }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRefs = useRef<maplibregl.Marker[]>([]);
   const mapLoadedRef = useRef(false);
+
+  const center = useMemo<[number, number]>(() => {
+    return computeCenter(map) ?? DEFAULT_CENTER;
+  }, [map]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const instance = new maplibregl.Map({
       container: containerRef.current,
-      style: DARK_RASTER_STYLE,
-      center: expanded ? [-122.38, 37.795] : [-122.39, 37.79],
-      zoom: expanded ? 11.15 : 10.4,
-      pitch: expanded ? 44 : 38,
-      bearing: -18,
+      style: staticMode ? STATIC_VECTOR_STYLE : DARK_RASTER_STYLE,
+      center,
+      zoom: expanded ? EXPANDED_ZOOM : DEFAULT_ZOOM,
+      pitch: expanded ? 36 : 30,
+      bearing: -10,
       attributionControl: false,
       dragRotate: false,
       scrollZoom: expanded,
@@ -227,288 +213,191 @@ function MapCanvas({
       touchZoomRotate: expanded,
     });
 
-    instance.addControl(
-      new maplibregl.NavigationControl({
-        visualizePitch: true,
-      }),
-      "top-right"
-    );
+    instance.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+    instance.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
 
-    instance.addControl(
-      new maplibregl.AttributionControl({
-        compact: true,
-      }),
-      "bottom-right"
-    );
+    instance.on("error", (e) => {
+      // Tile fetch failures bubble through here; switch to static fallback.
+      const err = e?.error as { status?: number; url?: string } | undefined;
+      if (err?.url && err.url.includes("basemaps.cartocdn.com")) {
+        onTilesFailed();
+      }
+    });
 
     instance.on("load", () => {
       mapLoadedRef.current = true;
-
-      addSourcesAndLayers(instance);
-
-      updateMapData(instance, {
-        hasDrone,
-        hasVessel,
-        isElevated,
-      });
-
-      markerRefs.current.forEach((marker) => marker.remove());
-      markerRefs.current = buildMarkers({
-        instance,
-        hasDrone,
-        hasVessel,
-        isElevated,
-      });
-
-      window.setTimeout(() => {
-        instance.resize();
-      }, 50);
+      addRavenGapLayers(instance, map);
+      markerRefs.current.forEach((m) => m.remove());
+      markerRefs.current = buildRavenGapMarkers(instance, map);
+      window.setTimeout(() => instance.resize(), 50);
     });
 
     mapRef.current = instance;
 
     return () => {
-      markerRefs.current.forEach((marker) => marker.remove());
+      markerRefs.current.forEach((m) => m.remove());
       markerRefs.current = [];
       mapLoadedRef.current = false;
-
       instance.remove();
       mapRef.current = null;
     };
-  }, [expanded]);
+  }, [expanded, staticMode, center, map, onTilesFailed]);
 
   useEffect(() => {
     const instance = mapRef.current;
+    if (!instance || !mapLoadedRef.current || !instance.isStyleLoaded()) return;
 
-    if (!instance || !mapLoadedRef.current || !instance.isStyleLoaded()) {
-      return;
-    }
-
-    updateMapData(instance, {
-      hasDrone,
-      hasVessel,
-      isElevated,
-    });
-
-    markerRefs.current.forEach((marker) => marker.remove());
-    markerRefs.current = buildMarkers({
-      instance,
-      hasDrone,
-      hasVessel,
-      isElevated,
-    });
-  }, [hasDrone, hasVessel, isElevated]);
+    updateRavenGapData(instance, map);
+    markerRefs.current.forEach((m) => m.remove());
+    markerRefs.current = buildRavenGapMarkers(instance, map);
+  }, [map]);
 
   return <div ref={containerRef} className="real-map" />;
 }
 
-function MapOverlays() {
+type MapOverlaysProps = {
+  naiCount: number;
+  friendlyCount: number;
+  contactCount: number;
+};
+
+function MapOverlays({ naiCount, friendlyCount, contactCount }: MapOverlaysProps) {
   return (
     <>
       <div className="map-vignette" />
       <div className="map-scan-overlay" />
 
       <div className="map-legend real">
-        <span>
-          <b className="blue" /> FRIENDLY ASSET
-        </span>
-        <span>
-          <b className="red" /> THREAT
-        </span>
-        <span>
-          <b className="gray" /> NEUTRAL
-        </span>
-        <span>
-          <b className="orange-line" /> UAS TRACK
-        </span>
-        <span>
-          <b className="cyan-line" /> VESSEL TRACK
-        </span>
+        <span><b className="blue" /> FRIENDLY</span>
+        <span><b className="red" /> CONTACT</span>
+        <span><b className="orange-line" /> PHASE LINE</span>
+        <span><b className="cyan-line" /> NAI</span>
+        <span><b className="gray" /> CHECKPOINT</span>
+      </div>
+
+      <div className="map-legend tactical-counts">
+        <span className="map-count">NAI {naiCount}</span>
+        <span className="map-count">FRD {friendlyCount}</span>
+        <span className="map-count">CTC {contactCount}</span>
       </div>
     </>
   );
 }
 
-function addSourcesAndLayers(instance: maplibregl.Map) {
-  if (instance.getSource("uas-track")) return;
-
-  instance.addSource("uas-track", {
-    type: "geojson",
-    data: lineFeature([UAS_START, UAS_MID, UAS_APPROACH_POINT]),
-  });
-
-  instance.addSource("vessel-track", {
-    type: "geojson",
-    data: lineFeature([VESSEL_START, VESSEL_MID, VESSEL_CURRENT]),
-  });
-
-  instance.addSource("sector-b", {
-    type: "geojson",
-    data: sectorPolygon(SECTOR_B, 0.018),
-  });
-
-  instance.addLayer({
-    id: "sector-b-fill",
-    type: "fill",
-    source: "sector-b",
-    paint: {
-      "fill-color": "#ff4040",
-      "fill-opacity": 0.06,
-    },
-  });
-
-  instance.addLayer({
-    id: "sector-b-line",
-    type: "line",
-    source: "sector-b",
-    paint: {
-      "line-color": "#ff4040",
-      "line-width": 2,
-      "line-opacity": 0.28,
-    },
-  });
-
-  instance.addLayer({
-    id: "uas-track-line",
-    type: "line",
-    source: "uas-track",
-    layout: {
-      "line-cap": "round",
-      "line-join": "round",
-    },
-    paint: {
-      "line-color": "#fb923c",
-      "line-width": 3,
-      "line-dasharray": [2, 2],
-      "line-opacity": 0,
-    },
-  });
-
-  instance.addLayer({
-    id: "vessel-track-line",
-    type: "line",
-    source: "vessel-track",
-    layout: {
-      "line-cap": "round",
-      "line-join": "round",
-    },
-    paint: {
-      "line-color": "#22d3ee",
-      "line-width": 3,
-      "line-dasharray": [2, 2],
-      "line-opacity": 0,
-    },
-  });
-}
-
-function updateMapData(
-  instance: maplibregl.Map,
-  args: {
-    hasDrone: boolean;
-    hasVessel: boolean;
-    isElevated: boolean;
-  }
-) {
-  const uasSource = instance.getSource("uas-track") as maplibregl.GeoJSONSource;
-  const vesselSource = instance.getSource(
-    "vessel-track"
-  ) as maplibregl.GeoJSONSource;
-  const sectorSource = instance.getSource("sector-b") as maplibregl.GeoJSONSource;
-
-  if (uasSource) {
-    uasSource.setData(lineFeature([UAS_START, UAS_MID, UAS_APPROACH_POINT]));
-  }
-
-  if (vesselSource) {
-    vesselSource.setData(lineFeature([VESSEL_START, VESSEL_MID, VESSEL_CURRENT]));
-  }
-
-  if (sectorSource) {
-    sectorSource.setData(sectorPolygon(SECTOR_B, 0.018));
-  }
-
-  if (instance.getLayer("uas-track-line")) {
-    instance.setPaintProperty(
-      "uas-track-line",
-      "line-opacity",
-      args.hasDrone ? 0.92 : 0
-    );
-  }
-
-  if (instance.getLayer("vessel-track-line")) {
-    instance.setPaintProperty(
-      "vessel-track-line",
-      "line-opacity",
-      args.hasVessel ? 0.86 : 0
-    );
-  }
-
-  if (instance.getLayer("sector-b-fill")) {
-    instance.setPaintProperty(
-      "sector-b-fill",
-      "fill-opacity",
-      args.isElevated ? 0.2 : 0.06
-    );
-  }
-
-  if (instance.getLayer("sector-b-line")) {
-    instance.setPaintProperty(
-      "sector-b-line",
-      "line-opacity",
-      args.isElevated ? 0.86 : 0.28
-    );
-  }
-}
-
-function buildMarkers(args: {
-  instance: maplibregl.Map;
-  hasDrone: boolean;
-  hasVessel: boolean;
-  isElevated: boolean;
-}) {
-  const { instance, hasDrone, hasVessel, isElevated } = args;
-
-  const markers: maplibregl.Marker[] = [];
-
-  markers.push(
-    makeMarker("friendly", "◇", "GATEWAY-01").setLngLat(GATEWAY).addTo(instance)
-  );
-
-  markers.push(
-    makeMarker("friendly", "⬢", "HQ NODE").setLngLat(HQ_NODE).addTo(instance)
-  );
-
-  markers.push(
-    makeMarker(
-      isElevated ? "sector active" : "sector",
-      "",
-      "PROTECTED ZONE B"
-    )
-      .setLngLat(SECTOR_B)
-      .addTo(instance)
-  );
-
-  if (hasDrone) {
-    UAS_CONTACTS.forEach((contact, index) => {
-      markers.push(
-        makeMarker(
-          index === 0
-            ? "threat active primary-uas"
-            : "threat active secondary-uas",
-          contact.icon,
-          contact.label
-        )
-          .setLngLat(contact.position)
-          .addTo(instance)
-      );
+/**
+ * Sources + layers added once on map "load". Updated in place via setData on
+ * subsequent renders.
+ */
+function addRavenGapLayers(instance: maplibregl.Map, map?: MapState | null) {
+  // NAI fills + outlines
+  if (!instance.getSource("nai-polygons")) {
+    instance.addSource("nai-polygons", {
+      type: "geojson",
+      data: naiCollection(map?.nais ?? []),
+    });
+    instance.addLayer({
+      id: "nai-fill",
+      type: "fill",
+      source: "nai-polygons",
+      paint: { "fill-color": "#22d3ee", "fill-opacity": 0.08 },
+    });
+    instance.addLayer({
+      id: "nai-line",
+      type: "line",
+      source: "nai-polygons",
+      paint: { "line-color": "#22d3ee", "line-width": 1.4, "line-opacity": 0.7 },
     });
   }
 
-  if (hasVessel) {
+  // Phase line
+  if (!instance.getSource("phase-lines")) {
+    instance.addSource("phase-lines", {
+      type: "geojson",
+      data: phaseLineCollection(map?.phase_line ?? []),
+    });
+    instance.addLayer({
+      id: "phase-line-stroke",
+      type: "line",
+      source: "phase-lines",
+      paint: {
+        "line-color": "#fb923c",
+        "line-width": 2.4,
+        "line-dasharray": [2, 2],
+        "line-opacity": 0.9,
+      },
+    });
+  }
+
+  // Risk zones (rendered as filled polygons approximating circles)
+  if (!instance.getSource("risk-zones")) {
+    instance.addSource("risk-zones", {
+      type: "geojson",
+      data: riskZoneCollection(map?.risk_zones ?? []),
+    });
+    instance.addLayer({
+      id: "risk-zone-fill",
+      type: "fill",
+      source: "risk-zones",
+      paint: { "fill-color": "#ff4040", "fill-opacity": 0.12 },
+    });
+    instance.addLayer({
+      id: "risk-zone-line",
+      type: "line",
+      source: "risk-zones",
+      paint: { "line-color": "#ff4040", "line-width": 1, "line-opacity": 0.55 },
+    });
+  }
+}
+
+function updateRavenGapData(instance: maplibregl.Map, map?: MapState | null) {
+  const naiSource = instance.getSource("nai-polygons") as maplibregl.GeoJSONSource | undefined;
+  const phaseSource = instance.getSource("phase-lines") as maplibregl.GeoJSONSource | undefined;
+  const riskSource = instance.getSource("risk-zones") as maplibregl.GeoJSONSource | undefined;
+
+  if (naiSource) naiSource.setData(naiCollection(map?.nais ?? []));
+  if (phaseSource) phaseSource.setData(phaseLineCollection(map?.phase_line ?? []));
+  if (riskSource) riskSource.setData(riskZoneCollection(map?.risk_zones ?? []));
+}
+
+function buildRavenGapMarkers(instance: maplibregl.Map, map?: MapState | null): maplibregl.Marker[] {
+  const markers: maplibregl.Marker[] = [];
+
+  // Friendly markers
+  for (const f of map?.friendly_markers ?? []) {
     markers.push(
-      makeMarker("vessel active", "▲", "UNKNOWN VESSEL")
-        .setLngLat(VESSEL_CURRENT)
-        .addTo(instance)
+      makeMarker(`friendly ${f.kind ?? ""}`.trim(), iconForFriendly(f.kind), f.label)
+        .setLngLat([f.lon, f.lat])
+        .addTo(instance),
+    );
+  }
+
+  // Checkpoints
+  for (const cp of map?.checkpoints ?? []) {
+    markers.push(
+      makeMarker("checkpoint", "◆", cp.label)
+        .setLngLat([cp.lon, cp.lat])
+        .addTo(instance),
+    );
+  }
+
+  // Contact markers — confidence drives shading
+  for (const c of map?.contact_markers ?? []) {
+    const confidenceClass = `contact ${normalizeConfidence(c.confidence)}`;
+    markers.push(
+      makeMarker(confidenceClass, "✕", c.label || "?")
+        .setLngLat([c.lon, c.lat])
+        .addTo(instance),
+    );
+  }
+
+  // NAI label markers (anchor on polygon centroid)
+  for (const nai of map?.nais ?? []) {
+    const c = polygonCentroid(nai.polygon);
+    if (!c) continue;
+    markers.push(
+      makeMarker("nai-label", "", nai.label)
+        .setLngLat([c.lon, c.lat])
+        .addTo(instance),
     );
   }
 
@@ -530,55 +419,112 @@ function makeMarker(kind: string, icon: string, label: string) {
   labelNode.textContent = label;
   element.appendChild(labelNode);
 
-  return new maplibregl.Marker({
-    element,
-    anchor: "center",
-  });
+  return new maplibregl.Marker({ element, anchor: "center" });
 }
 
-function lineFeature(coords: [number, number][]): FeatureCollection<LineString> {
-  return {
-    type: "FeatureCollection",
-    features: [
-      {
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "LineString",
-          coordinates: coords,
-        },
-      },
-    ],
-  };
-}
-
-function sectorPolygon(
-  center: [number, number],
-  radius: number
-): FeatureCollection<Polygon> {
-  const [lng, lat] = center;
-  const points: [number, number][] = [];
-
-  for (let i = 0; i <= 72; i++) {
-    const angle = (i / 72) * Math.PI * 2;
-
-    points.push([
-      lng + Math.cos(angle) * radius,
-      lat + Math.sin(angle) * radius * 0.72,
-    ]);
+function iconForFriendly(kind?: string): string {
+  switch (kind) {
+    case "drone":
+      return "◉";
+    case "vehicle":
+      return "▭";
+    case "sensor":
+      return "◇";
+    case "uas_team":
+      return "◉";
+    case "weapons":
+      return "✦";
+    default:
+      return "◆";
   }
+}
 
+function normalizeConfidence(c: string | undefined): string {
+  if (!c) return "suspected";
+  const v = c.toLowerCase();
+  if (v === "confirmed" || v === "suspected" || v === "lost") return v;
+  return "suspected";
+}
+
+// --- GeoJSON helpers ---------------------------------------------------------
+
+function naiCollection(nais: NamedAreaOfInterest[]): FeatureCollection<Polygon> {
   return {
     type: "FeatureCollection",
-    features: [
-      {
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "Polygon",
-          coordinates: [points],
-        },
+    features: nais.map((nai): Feature<Polygon> => ({
+      type: "Feature",
+      properties: { id: nai.id, label: nai.label },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[...nai.polygon.map((p) => [p.lon, p.lat] as [number, number]), [nai.polygon[0]?.lon, nai.polygon[0]?.lat] as [number, number]]],
       },
-    ],
+    })),
   };
 }
+
+function phaseLineCollection(lines: PhaseLine[]): FeatureCollection<LineString> {
+  return {
+    type: "FeatureCollection",
+    features: lines.map((pl): Feature<LineString> => ({
+      type: "Feature",
+      properties: { id: pl.id, label: pl.label },
+      geometry: {
+        type: "LineString",
+        coordinates: pl.points.map((p) => [p.lon, p.lat] as [number, number]),
+      },
+    })),
+  };
+}
+
+function riskZoneCollection(zones: RiskZone[]): FeatureCollection<Polygon> {
+  return {
+    type: "FeatureCollection",
+    features: zones.map((z): Feature<Polygon> => ({
+      type: "Feature",
+      properties: { id: z.id },
+      geometry: {
+        type: "Polygon",
+        coordinates: [circlePoints(z, 36)],
+      },
+    })),
+  };
+}
+
+/** Approximate `radius_m` as a polygon ring around (lat, lon). */
+function circlePoints(z: RiskZone, segments: number): [number, number][] {
+  const earthMeters = 111_320; // crude meters-per-degree at equator
+  const dLat = z.radius_m / earthMeters;
+  const dLon = z.radius_m / (earthMeters * Math.cos((z.lat * Math.PI) / 180));
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    ring.push([z.lon + Math.cos(angle) * dLon, z.lat + Math.sin(angle) * dLat]);
+  }
+  return ring;
+}
+
+function polygonCentroid(points: LatLon[]): LatLon | null {
+  if (!points || points.length === 0) return null;
+  let lat = 0;
+  let lon = 0;
+  for (const p of points) {
+    lat += p.lat;
+    lon += p.lon;
+  }
+  return { lat: lat / points.length, lon: lon / points.length };
+}
+
+function computeCenter(map?: MapState | null): [number, number] | null {
+  const friendly = map?.friendly_markers ?? [];
+  const contacts = map?.contact_markers ?? [];
+  const all: LatLon[] = [...friendly, ...contacts];
+  if (all.length === 0) return null;
+  let lat = 0;
+  let lon = 0;
+  for (const p of all) {
+    lat += p.lat;
+    lon += p.lon;
+  }
+  return [lon / all.length, lat / all.length];
+}
+

@@ -129,16 +129,17 @@ export async function resolveIncident(payload: { incident_id: string; }) {
 }
 
 /**
- * POST /comms/degrade. Backend (Team A) flips state.comms.degraded and fills
- * the budget/raw/compacted fields. While A's endpoint isn't live, fall back
- * to a locally-computed comms slice so the toggle still demos.
+ * POST /comms/degrade. Per docs/THEPLAN.md, backend (Team A) ships only
+ * `{ degraded, source_detail_level }`; the bandwidth meter computes raw /
+ * compacted / budget locally in DegradedCommsToggle. Falls back to a local
+ * comms slice when the endpoint isn't live yet.
  */
-export async function setCommsDegraded(degraded: boolean, kbps = 3) {
+export async function setCommsDegraded(degraded: boolean) {
   try {
     const res = await fetch(`${BASE_URL}/comms/degrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ degraded, kbps }),
+      body: JSON.stringify({ degraded }),
     });
 
     if (res.ok) {
@@ -149,6 +150,6 @@ export async function setCommsDegraded(degraded: boolean, kbps = 3) {
   }
 
   return {
-    comms: degraded ? buildDegradedComms(kbps) : ravenGapCommsFull,
+    comms: degraded ? buildDegradedComms() : ravenGapCommsFull,
   };
 }

@@ -4,7 +4,6 @@ import { useState } from "react";
 import TopBar from "../components/TopBar";
 import LogStream from "../components/LogStream";
 import SignalBreakdown from "../components/SignalBreakdown";
-import CorrelationScore from "../components/CorrelationScore";
 import IncidentCard from "../components/IncidentCard";
 import MapView from "../components/MapView";
 import AssetStatus from "../components/AssetStatus";
@@ -21,6 +20,15 @@ type FocusedSignal = {
   token: number;
 } | null;
 
+/**
+ * Dashboard layout follows docs/THEPLAN.md "what done looks like":
+ *   "the four-panel command picture (mesh tree top, source-report feed left,
+ *    map center, SITREP+delta right) holds the final state for the
+ *    post-pitch photo."
+ *
+ * Plus a bottom compaction timeline strip and a small aside for
+ * SignalBreakdown / AssetStatus.
+ */
 export default function Dashboard() {
   const {
     state,
@@ -77,66 +85,67 @@ export default function Dashboard() {
         selectedScenarioId={selectedScenarioId}
         onScenarioChange={handleScenarioChange}
         comms={state.comms}
+        events={state.events}
+        compactions={state.compactions}
         onToggleDegraded={toggleDegraded}
       />
 
-      <main className="dashboard-grid">
-        <section className="dashboard-area event-area">
-          <div className="event-area-stack">
-            <MeshTree mesh={state.mesh} events={state.events} />
-            <LogStream
-              events={state.events}
-              focusedEventIds={focusedSignal?.evidenceIds ?? []}
-              focusToken={focusedSignal?.token ?? 0}
-            />
-          </div>
+      <main className="dashboard-grid raven-gap">
+        <section className="dashboard-area mesh-area">
+          <MeshTree mesh={state.mesh} events={state.events} />
         </section>
 
-        <section className="dashboard-area signal-area">
-          <div className="signal-area-stack">
-            <SignalBreakdown
-              signals={state.signals}
-              selectedSignalKind={focusedSignal?.kind ?? null}
-              onSignalSelect={(signal) => {
-                setFocusedSignal((current) => {
-                  if (current?.kind === signal.kind) {
-                    return null;
-                  }
-
-                  return {
-                    kind: signal.kind,
-                    evidenceIds: signal.evidence ?? [],
-                    token: Date.now(),
-                  };
-                });
-              }}
-            />
-            <CompactionTimeline
-              compactions={state.compactions}
-              events={state.events}
-              onEvidenceClick={openEvidence}
-            />
-          </div>
-        </section>
-
-        <section className="dashboard-area right-top-area">
-          <CorrelationScore correlation={state.correlation} />
-
-          <IncidentCard
-            incident={state.incident}
-            correlation={state.correlation}
-            onIncidentUpdated={refresh}
-            onEvidenceClick={openEvidence}
+        <section className="dashboard-area feed-area">
+          <LogStream
+            events={state.events}
+            focusedEventIds={focusedSignal?.evidenceIds ?? []}
+            focusToken={focusedSignal?.token ?? 0}
           />
-
-          <SitrepDeltaPanel delta={state.sitrep_delta} />
         </section>
 
         <section className="dashboard-area map-area">
           <MapView map={state.map_state} />
         </section>
 
-        <section className="dashboard-area asset-area">
+        <section className="dashboard-area sitrep-area">
+          <IncidentCard
+            incident={state.incident}
+            correlation={state.correlation}
+            onIncidentUpdated={refresh}
+            onEvidenceClick={openEvidence}
+          />
+          <SitrepDeltaPanel delta={state.sitrep_delta} />
+        </section>
+
+        <section className="dashboard-area signals-area">
+          <SignalBreakdown
+            signals={state.signals}
+            selectedSignalKind={focusedSignal?.kind ?? null}
+            onSignalSelect={(signal) => {
+              setFocusedSignal((current) => {
+                if (current?.kind === signal.kind) {
+                  return null;
+                }
+
+                return {
+                  kind: signal.kind,
+                  evidenceIds: signal.evidence ?? [],
+                  token: Date.now(),
+                };
+              });
+            }}
+          />
+        </section>
+
+        <section className="dashboard-area timeline-area">
+          <CompactionTimeline
+            compactions={state.compactions}
+            events={state.events}
+            onEvidenceClick={openEvidence}
+          />
+        </section>
+
+        <section className="dashboard-area aside-area">
           <AssetStatus assets={state.map_state?.assets} />
         </section>
       </main>

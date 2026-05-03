@@ -942,3 +942,128 @@
     justify-content: center;
   }
 }
+
+/* =========================================================
+   Raven Gap markers
+========================================================= */
+
+.map-mgrs-pill {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cyan);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+}
+
+.map-count {
+  color: #e8f3ff;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.map-legend.tactical-counts {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  z-index: 9;
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(84, 139, 184, 0.25);
+  border-radius: 999px;
+  background: rgba(4, 10, 18, 0.78);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.geo-marker.checkpoint {
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background:
+    linear-gradient(180deg, rgba(148, 163, 184, 0.14), rgba(15, 23, 42, 0.32));
+}
+
+.geo-marker.checkpoint .geo-marker-icon {
+  color: var(--muted);
+}
+
+.geo-marker.nai-label {
+  color: var(--cyan);
+  border: 1px dashed rgba(34, 211, 238, 0.55);
+  background: rgba(7, 17, 28, 0.78);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  opacity: 0.92;
+}
+
+.geo-marker.contact {
+  color: #fde2e2;
+  border: 1px solid rgba(255, 64, 64, 0.55);
+  background:
+    linear-gradient(180deg, rgba(255, 64, 64, 0.18), rgba(69, 10, 10, 0.32));
+  box-shadow:
+    0 0 14px rgba(255, 64, 64, 0.18),
+    inset 0 0 10px rgba(255, 64, 64, 0.08);
+}
+
+.geo-marker.contact.confirmed {
+  border-color: rgba(255, 64, 64, 0.85);
+  box-shadow:
+    0 0 22px rgba(255, 64, 64, 0.32),
+    inset 0 0 14px rgba(255, 64, 64, 0.12);
+}
+
+.geo-marker.contact.confirmed .geo-marker-icon {
+  color: var(--red);
+  text-shadow: 0 0 10px rgba(255, 64, 64, 0.6);
+}
+
+.geo-marker.contact.suspected {
+  opacity: 0.78;
+  border-style: dashed;
+  border-color: rgba(255, 64, 64, 0.45);
+}
+
+.geo-marker.contact.suspected .geo-marker-icon {
+  color: rgba(255, 64, 64, 0.85);
+}
+
+.geo-marker.contact.lost {
+  opacity: 0.55;
+  border-color: rgba(148, 163, 184, 0.45);
+  color: var(--muted);
+}
+
+.geo-marker.friendly.drone .geo-marker-icon,
+.geo-marker.friendly.uas_team .geo-marker-icon {
+  color: var(--cyan);
+}
+
+.geo-marker.friendly.sensor .geo-marker-icon {
+  color: var(--green);
+}
+
+.geo-marker.friendly.vehicle .geo-marker-icon {
+  color: #e8f3ff;
+}
+
+.geo-marker.friendly.weapons .geo-marker-icon {
+  color: var(--orange);
+}
+
+.map-mode-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.08);
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.map-mode-btn:hover {
+  filter: brightness(1.2);
+}

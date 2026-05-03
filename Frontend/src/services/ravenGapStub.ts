@@ -18,6 +18,7 @@ import type {
   Comms,
   Compaction,
   EvidenceLine,
+  MapState,
   Mesh,
   RavenGapEventMetadata,
   SitrepDelta,
@@ -315,13 +316,15 @@ export const ravenGapEvidenceLines: EvidenceLine[] = [
 
 const ravenGapIncident = {
   id: "sitrep_002",
-  type: "platoon_sitrep",
+  type: "Commander SITREP",
   severity: "medium",
   status: "active",
+  /** THEPLAN-style elapsed-seconds-from-replay-start label. */
+  timestamp: "T+75",
   summary:
     "Platoon under observation pressure at NAI 1 / NAI 2. Confirmed dismount contact and unidentified vehicle activity. Mesh link to RQ-11 degraded.",
   narrative:
-    "Sentinel Forge fused 12 source reports across three squads, the UAS team, and the OP/LP sensor. Confirmed contact at NAI 1 and emerging vehicle threat at NAI 2 drive a recommendation to retask UAS-02 and stage QRF.",
+    "TacNet Edge fused 12 source reports across three squads, the UAS team, and the OP/LP sensor. Confirmed contact at NAI 1 and emerging vehicle threat at NAI 2 drive a recommendation to retask UAS-02 and stage QRF.",
   active_risk: 0.72,
   confidence: 0.74,
   detection_confidence: 0.78,
@@ -331,7 +334,7 @@ const ravenGapIncident = {
     "OP/LP sensor S7 motion trigger inside picket line",
   ],
   recommended_actions: [
-    "Retask UAS-02 to NAI 2",
+    "Retask RQ-11 to NAI 2",
     "Stage QRF behind Phase Line BLUE",
     "Confirm S7 trigger with 3/A patrol",
     "Push compacted SITREP to higher",
@@ -340,39 +343,87 @@ const ravenGapIncident = {
   evidence_lines: ravenGapEvidenceLines,
 };
 
-const RAW_BYTES = 18420;
-const COMPACTED_BYTES = 2870;
-const KBPS = 3;
-const WINDOW_SEC = 10;
+/**
+ * Raven Gap map state — geographic command picture per docs/THEPLAN.md.
+ * Coordinates are named keys {lat, lon}, never positional arrays. Centered on
+ * Nevada training-area-style terrain to match MGRS 11SLT prefix used by event
+ * stubs. Real demo content comes from B's NAI/grid list when delivered.
+ */
+export const ravenGapMapState: MapState = {
+  mgrs_grid_anchor: { easting: 12000, northing: 67000, zone: "11SLT" },
+  phase_line: [
+    {
+      id: "pl_blue",
+      label: "PHASE LINE BLUE",
+      points: [
+        { lat: 36.108, lon: -115.430 },
+        { lat: 36.150, lon: -115.430 },
+        { lat: 36.180, lon: -115.430 },
+      ],
+    },
+  ],
+  checkpoints: [
+    { id: "cp_1", label: "CP-1", lat: 36.118, lon: -115.460 },
+    { id: "cp_2", label: "CP-2", lat: 36.140, lon: -115.450 },
+  ],
+  nais: [
+    {
+      id: "nai_1",
+      label: "NAI 1",
+      polygon: [
+        { lat: 36.119, lon: -115.460 },
+        { lat: 36.119, lon: -115.452 },
+        { lat: 36.127, lon: -115.452 },
+        { lat: 36.127, lon: -115.460 },
+      ],
+    },
+    {
+      id: "nai_2",
+      label: "NAI 2",
+      polygon: [
+        { lat: 36.130, lon: -115.454 },
+        { lat: 36.130, lon: -115.444 },
+        { lat: 36.140, lon: -115.444 },
+        { lat: 36.140, lon: -115.454 },
+      ],
+    },
+  ],
+  friendly_markers: [
+    { id: "1st_squad_team_a", label: "1/A", lat: 36.118, lon: -115.461, kind: "infantry" },
+    { id: "1st_squad_team_b", label: "1/B", lat: 36.116, lon: -115.463, kind: "infantry" },
+    { id: "2nd_squad_team_a", label: "2/A", lat: 36.122, lon: -115.458, kind: "infantry" },
+    { id: "2nd_squad_team_b", label: "2/B", lat: 36.124, lon: -115.457, kind: "infantry" },
+    { id: "3rd_squad_team_a", label: "3/A", lat: 36.126, lon: -115.461, kind: "infantry" },
+    { id: "weapons_squad", label: "WPNS", lat: 36.115, lon: -115.464, kind: "weapons" },
+    { id: "uas_team", label: "UAS", lat: 36.116, lon: -115.462, kind: "uas_team" },
+    { id: "op_lp", label: "OP/LP", lat: 36.130, lon: -115.455, kind: "sensor" },
+    { id: "rq_11", label: "RQ-11", lat: 36.131, lon: -115.451, kind: "drone" },
+    { id: "jltv_v1", label: "V1", lat: 36.114, lon: -115.466, kind: "vehicle" },
+    { id: "sensor_s7", label: "S7", lat: 36.130, lon: -115.455, kind: "sensor" },
+  ],
+  contact_markers: [
+    { id: "ctc_nai1_1", label: "?", lat: 36.123, lon: -115.456, confidence: "confirmed" },
+    { id: "ctc_nai2_1", label: "?", lat: 36.135, lon: -115.448, confidence: "suspected" },
+  ],
+  risk_zones: [
+    { id: "rz_nai1", label: "NAI 1 RISK", lat: 36.123, lon: -115.456, radius_m: 250 },
+    { id: "rz_nai2", label: "NAI 2 RISK", lat: 36.135, lon: -115.448, radius_m: 350 },
+  ],
+  routes: [],
+};
 
+/** Minimal comms shape per docs/THEPLAN.md. Bandwidth metrics are computed
+ * locally in DegradedCommsToggle from events + compactions; backend only
+ * ships these two fields. */
 export const ravenGapCommsFull: Comms = {
   degraded: false,
-  kbps: null,
-  window_sec: WINDOW_SEC,
-  budget_bytes: null,
-  raw_bytes: RAW_BYTES,
-  compacted_bytes: COMPACTED_BYTES,
-  compression_ratio: null,
-  fits_budget: true,
   source_detail_level: "full",
 };
 
-export function buildDegradedComms(kbps = KBPS): Comms {
-  const budget = Math.round((kbps * 1000 * WINDOW_SEC) / 8);
-  const ratio = COMPACTED_BYTES > 0
-    ? Number((RAW_BYTES / COMPACTED_BYTES).toFixed(2))
-    : null;
-
+export function buildDegradedComms(): Comms {
   return {
     degraded: true,
-    kbps,
-    window_sec: WINDOW_SEC,
-    budget_bytes: budget,
-    raw_bytes: RAW_BYTES,
-    compacted_bytes: COMPACTED_BYTES,
-    compression_ratio: ratio,
-    fits_budget: COMPACTED_BYTES <= budget,
-    source_detail_level: "compact",
+    source_detail_level: "reduced",
   };
 }
 
@@ -383,6 +434,7 @@ export const ravenGapStubState = {
   sitrep_delta: ravenGapSitrepDelta,
   comms: ravenGapCommsFull,
   incident: ravenGapIncident,
+  map_state: ravenGapMapState,
 };
 
 /**
@@ -398,6 +450,7 @@ type MergeableState = Record<string, unknown> & {
   sitrep_delta?: unknown;
   comms?: unknown;
   incident?: Record<string, unknown> | null;
+  map_state?: Record<string, unknown> | null;
 };
 
 export function mergeRavenGapStub<T>(state: T): T {
@@ -415,6 +468,31 @@ export function mergeRavenGapStub<T>(state: T): T {
   }
   if (!next.sitrep_delta) next.sitrep_delta = ravenGapStubState.sitrep_delta;
   if (!next.comms) next.comms = ravenGapStubState.comms;
+
+  // map_state merge: fill any missing Raven Gap key on top of whatever the
+  // backend currently produces. This preserves legacy Sentinel Forge fields
+  // (tracks, threat_paths, assets) when present.
+  const stubMap = ravenGapStubState.map_state as Record<string, unknown>;
+  const currentMap = (next.map_state ?? null) as Record<string, unknown> | null;
+  const ravenGapKeys = [
+    "mgrs_grid_anchor",
+    "phase_line",
+    "checkpoints",
+    "nais",
+    "friendly_markers",
+    "contact_markers",
+    "risk_zones",
+    "routes",
+  ] as const;
+  const mergedMap: Record<string, unknown> = { ...(currentMap ?? {}) };
+  for (const key of ravenGapKeys) {
+    const existing = mergedMap[key];
+    const isEmpty =
+      existing === undefined || existing === null ||
+      (Array.isArray(existing) && existing.length === 0);
+    if (isEmpty) mergedMap[key] = stubMap[key];
+  }
+  next.map_state = mergedMap;
 
   if (!next.incident) {
     next.incident = ravenGapStubState.incident as unknown as Record<string, unknown>;

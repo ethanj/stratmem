@@ -277,7 +277,7 @@ export default function LogStream({
     <>
       <div className="panel event-stream-panel">
         <div className="panel-header">
-          <h2>EVENT STREAM</h2>
+          <h2>SOURCE REPORTS</h2>
 
           <label className="event-filter-control">
             <span>FILTER</span>
@@ -377,9 +377,9 @@ export default function LogStream({
           >
             <header className="log-modal-header">
               <div>
-                <h2>FULL EVENT LOG</h2>
+                <h2>FULL REPORT LOG</h2>
                 <span>
-                  {orderedEvents.length} EVENTS CAPTURED ·{" "}
+                  {orderedEvents.length} REPORTS CAPTURED ·{" "}
                   {filteredEvents.length} VISIBLE IN CURRENT FILTER
                 </span>
               </div>
