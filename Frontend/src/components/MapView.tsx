@@ -236,7 +236,7 @@ function updateMarkerElement(
   onSelect: (id: string) => void,
 ) {
   const selected = selectedId === entity.id ? " selected" : "";
-  element.className = `mil-marker ${markerTone(entity)} ${markerStatus(entity)}${selected}`;
+  element.className = markerClassName(element, entity, selected);
   element.onclick = (event) => {
     event.stopPropagation();
     onSelect(entity.id);
@@ -252,6 +252,25 @@ function updateMarkerElement(
   }
   symbol.innerHTML = symbolSvgForEntity(entity);
   label.textContent = entity.callsign || entity.label;
+}
+
+function markerClassName(
+  element: HTMLElement,
+  entity: TacticalEntity,
+  selected: string,
+) {
+  const mapLibreClasses = Array.from(element.classList)
+    .filter((className) => className.startsWith("maplibregl-"));
+  const requiredMapClasses = mapLibreClasses.includes("maplibregl-marker")
+    ? mapLibreClasses
+    : ["maplibregl-marker", ...mapLibreClasses];
+  return [
+    ...requiredMapClasses,
+    "mil-marker",
+    markerTone(entity),
+    markerStatus(entity),
+    selected.trim(),
+  ].filter(Boolean).join(" ");
 }
 
 type ChromeProps = {
