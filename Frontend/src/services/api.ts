@@ -182,6 +182,25 @@ export async function decodeReceiverDemoFrame(): Promise<ReceiverDecodeEvent> {
   return res.json();
 }
 
+export async function decodeReceiverFrame(payload: {
+  frame_hex: string;
+  room: string;
+  source: string;
+  received_at: string;
+}): Promise<ReceiverDecodeEvent> {
+  const res = await fetch(`${BASE_URL}/api/receiver/decode`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to decode receiver frame");
+  }
+
+  return res.json();
+}
+
 export async function setCommsDegraded(degraded: boolean, kbps?: number) {
   try {
     const res = await fetch(`${BASE_URL}/comms/degrade`, {

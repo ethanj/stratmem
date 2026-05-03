@@ -11,6 +11,7 @@ import { createId } from "./ids.js?v=uuid-fallback-20260503";
 import { PeerLink } from "./link.js?v=uuid-fallback-20260503";
 import { createS2Bridge } from "./s2-bridge.js?v=s2-trigger-20260503";
 import { OfflineWhisperTranscriber } from "./stt.js?v=peer-diagnostics-20260503";
+import { applyUrlDefaults } from "./url-defaults.js?v=s2-trigger-20260503";
 
 const frameTypes = {
   metadata: 1,
@@ -55,6 +56,7 @@ const s2Bridge = createS2Bridge({
 bootstrap();
 
 async function bootstrap() {
+  applyUrlDefaults(ui);
   s2Bridge.init();
   await checkServer();
   bindControls();
