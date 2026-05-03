@@ -27,9 +27,34 @@
   min-height: 0;
   padding: 9px 10px 10px;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   gap: 8px;
   overflow: hidden;
+}
+
+.voice-link-story {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 6px;
+  background: rgba(113, 63, 18, 0.18);
+}
+
+.voice-link-story.enabled {
+  border-color: rgba(34, 197, 94, 0.34);
+  background: rgba(20, 83, 45, 0.24);
+}
+
+.voice-link-story strong {
+  color: var(--text-bright);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+.voice-link-story span {
+  color: var(--label);
+  font-size: 9.5px;
 }
 
 .voice-report-actions {
@@ -80,7 +105,6 @@
   min-height: 0;
   display: grid;
   align-content: start;
-  overflow-y: auto;
 }
 
 .voice-report-row {
@@ -116,6 +140,66 @@
 
 .voice-report-panel.processed .voice-report-row:first-child strong {
   color: var(--green);
+}
+
+.voice-receiver {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 7px;
+  overflow: hidden;
+}
+
+.voice-receiver-summary {
+  min-height: 44px;
+  max-height: 82px;
+  overflow-y: auto;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  border-radius: 6px;
+  padding: 8px;
+  color: #d7fbe8;
+  background: rgba(10, 35, 25, 0.42);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.voice-receiver-metadata {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  overflow-y: auto;
+}
+
+.voice-receiver-row {
+  min-height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.12);
+  font-size: 9.5px;
+}
+
+.voice-receiver-row span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+.voice-receiver-row strong {
+  min-width: 0;
+  color: #e8f3ff;
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-receiver-empty {
+  color: var(--muted);
+  font-size: 10px;
 }
 
 .voice-report-error {

@@ -12,7 +12,6 @@ import CompactionTimeline from "../components/CompactionTimeline";
 import SitrepDeltaPanel from "../components/SitrepDeltaPanel";
 import EvidenceDrawer from "../components/EvidenceDrawer";
 import VoiceReportPanel from "../components/VoiceReportPanel";
-import ReceiverDecodePanel from "../components/ReceiverDecodePanel";
 import TacticalEntityDrawer from "../components/map/TacticalEntityDrawer";
 
 import { useSimulation } from "../hooks/useSimulation";
@@ -32,7 +31,7 @@ type FocusedSignal = {
   token: number;
 } | null;
 
-type OverlayKey = "reports" | "mesh" | "sitrep" | "timeline" | "voice" | "receiver" | "assets";
+type OverlayKey = "reports" | "mesh" | "sitrep" | "timeline" | "voice" | "assets";
 type AssetRows = Parameters<typeof AssetStatus>[0]["assets"];
 type VoiceReportProps = Parameters<typeof VoiceReportPanel>[0];
 type DashboardState = {
@@ -53,7 +52,6 @@ const OVERLAY_TABS: { key: OverlayKey; label: string }[] = [
   { key: "sitrep", label: "SITREP" },
   { key: "timeline", label: "TIMELINE" },
   { key: "voice", label: "VOICE" },
-  { key: "receiver", label: "RX" },
   { key: "assets", label: "ASSETS" },
 ];
 
@@ -61,7 +59,7 @@ const OVERLAY_TABS: { key: OverlayKey; label: string }[] = [
  * Dashboard layout for the S2 readiness demo.
  *
  * The primary view is map-first, with selected-unit readiness in the right rail
- * and supporting reports, mesh, SITREP, receiver, and voice controls hidden in
+ * and supporting reports, mesh, SITREP, and voice-link controls hidden in
  * operator-opened overlay tabs.
  */
 export default function Dashboard() {
@@ -281,13 +279,12 @@ function overlayContent(props: Parameters<typeof OverlayPanel>[0]) {
       <VoiceReportPanel
         voiceReport={state.voice_report}
         comms={state.comms}
+        receiverEvents={props.receiverEvents}
         onSubmit={async (audioId) => { await props.submitVoiceReport(audioId); }}
         onCompressionChange={async (enabled) => { await props.setCompressionEnabled(enabled); }}
+        onDecoded={async () => { await props.refresh(); }}
       />
     );
-  }
-  if (props.openOverlay === "receiver") {
-    return <ReceiverDecodePanel events={props.receiverEvents} onDecoded={async () => { await props.refresh(); }} />;
   }
   if (props.openOverlay === "assets") {
     return <AssetStatus assets={assetRows(state.map_state?.assets)} />;
