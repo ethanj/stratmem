@@ -1,4 +1,13 @@
-# app/state/store.py
+"""In-memory state store for the Sentinel Forge FastAPI demo.
+
+The store is the single owner of the `/state` response shape. It keeps the
+legacy Sentinel Forge incident contract intact while adding TacNet Edge fields
+for mesh hierarchy, squad compactions, SITREP deltas, and degraded-comms proof.
+
+The module deliberately returns deep copies at API boundaries so route handlers
+can compose updates without accidentally mutating shared state between requests.
+"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -12,7 +21,12 @@ DEFAULT_SCENARIO = {
 }
 
 
+DEGRADED_COMMS_KBPS = 3
+COMMS_WINDOW_SECONDS = 10
+
+
 def build_empty_correlation() -> dict[str, Any]:
+    """Build the empty correlation payload expected by existing clients."""
     return {
         "confidence": 0,
         "level": "low",
@@ -33,19 +47,115 @@ def build_empty_correlation() -> dict[str, Any]:
     }
 
 
+def build_empty_map_state() -> dict[str, Any]:
+    """Build a map contract that supports both legacy and Raven Gap clients."""
+    return {
+        "tracks": [],
+        "assets": [],
+        "zones": [],
+        "threat_paths": [],
+        "mgrs_grid": {},
+        "phase_line": {},
+        "checkpoints": [],
+        "nais": [],
+        "friendly_markers": [],
+        "contact_markers": [],
+        "risk_zones": [],
+        "routes": [],
+    }
+
+
+def build_default_mesh() -> dict[str, Any]:
+    """Build the static TacNet command-tree mesh for Raven Gap."""
+    return {
+        "id": "raven-gap-mesh",
+        "root": "PLT",
+        "nodes": [
+            {"id": "PLT", "label": "PL Raven", "role": "commander", "echelon": "platoon"},
+            {"id": "SQD-1", "label": "1st Squad", "role": "rifle_squad", "parent": "PLT"},
+            {"id": "SQD-2", "label": "2nd Squad", "role": "rifle_squad", "parent": "PLT"},
+            {"id": "SQD-3", "label": "3rd Squad", "role": "rifle_squad", "parent": "PLT"},
+            {"id": "WPN", "label": "Weapons Squad", "role": "support", "parent": "PLT"},
+            {"id": "UAS-2", "label": "Raven-2", "role": "small_uas", "parent": "PLT"},
+            {"id": "JLTV-1", "label": "JLTV-1", "role": "support_vehicle", "parent": "PLT"},
+            {"id": "SENS-1", "label": "OP/LP Sensor", "role": "sensor", "parent": "PLT"},
+        ],
+        "links": [
+            {"from": "SQD-1", "to": "PLT", "mode": "summary_up"},
+            {"from": "SQD-2", "to": "PLT", "mode": "summary_up"},
+            {"from": "SQD-3", "to": "PLT", "mode": "summary_up"},
+            {"from": "WPN", "to": "PLT", "mode": "summary_up"},
+            {"from": "UAS-2", "to": "PLT", "mode": "summary_up"},
+            {"from": "JLTV-1", "to": "PLT", "mode": "summary_up"},
+            {"from": "SENS-1", "to": "PLT", "mode": "summary_up"},
+        ],
+    }
+
+
+def build_empty_sitrep_delta() -> dict[str, Any]:
+    """Build the empty commander-delta payload."""
+    return {
+        "since_id": None,
+        "what_changed": [],
+        "summary": "No commander SITREP yet.",
+        "changed": [],
+    }
+
+
+def build_comms_proof(
+    raw_bytes: int = 0,
+    compacted_bytes: int = 0,
+    kbps: float | None = None,
+) -> dict[str, Any]:
+    """Build the deterministic per-window bandwidth proof.
+
+    Args:
+        raw_bytes: Bytes required to transmit source reports.
+        compacted_bytes: Bytes required to transmit compacted summaries.
+        kbps: Link budget in kilobits per second.
+
+    Returns:
+        A proof payload with byte budget, compression ratio, and fit status.
+    """
+    budget_bytes = None
+    if kbps is not None:
+        budget_bytes = int((float(kbps) * 1000 / 8) * COMMS_WINDOW_SECONDS)
+
+    ratio = round(raw_bytes / compacted_bytes, 2) if compacted_bytes else None
+
+    return {
+        "budget_bytes": budget_bytes,
+        "raw_bytes": int(raw_bytes),
+        "compacted_bytes": int(compacted_bytes),
+        "compression_ratio": ratio,
+        "fits_budget": True if budget_bytes is None else compacted_bytes <= budget_bytes,
+    }
+
+
+def build_default_comms() -> dict[str, Any]:
+    """Build the default non-degraded comms state."""
+    return {
+        "degraded": False,
+        "kbps": None,
+        "window_sec": COMMS_WINDOW_SECONDS,
+        **build_comms_proof(),
+        "source_detail_level": "full",
+    }
+
+
 def build_initial_state(scenario: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    """Build a fresh state document for `/state`."""
     return {
         "events": [],
         "signals": [],
         "correlation": build_empty_correlation(),
         "incident": None,
         "agent": None,
-        "map_state": {
-            "tracks": [],
-            "assets": [],
-            "zones": [],
-            "threat_paths": [],
-        },
+        "map_state": build_empty_map_state(),
+        "mesh": build_default_mesh(),
+        "compactions": [],
+        "sitrep_delta": build_empty_sitrep_delta(),
+        "comms": build_default_comms(),
         "scenario": scenario or DEFAULT_SCENARIO,
         "meta": {
             "mode": "demo",
@@ -58,6 +168,7 @@ def build_initial_state(scenario: Optional[dict[str, Any]] = None) -> dict[str, 
 
 
 def _build_operator_report(incident: dict[str, Any], tracking: dict[str, Any]) -> dict[str, Any]:
+    """Summarize operator action completion for the legacy incident card."""
     recommended = incident.get("recommended_actions", []) or []
     action_status = tracking.get("action_status", {})
     completed_actions = [action for action in recommended if action_status.get(action)]
@@ -81,7 +192,24 @@ def _build_operator_report(incident: dict[str, Any], tracking: dict[str, Any]) -
     }
 
 
+def _merge_comms(comms: Optional[dict[str, Any]]) -> dict[str, Any]:
+    merged = build_default_comms()
+    if comms:
+        merged.update(deepcopy(comms))
+
+    if "window_seconds" in merged:
+        merged["window_sec"] = merged.pop("window_seconds")
+
+    merged["source_detail_level"] = (
+        "reduced" if merged.get("degraded") else "full"
+    )
+
+    return merged
+
+
 class StateStore:
+    """Tiny process-local store for the demo server."""
+
     def __init__(self):
         self._state = build_initial_state()
 
@@ -90,10 +218,12 @@ class StateStore:
         return self.get()
 
     def get(self) -> dict[str, Any]:
+        self._ensure_contract_fields()
         return deepcopy(self._state)
 
     def replace(self, state: dict[str, Any]) -> dict[str, Any]:
         self._state = deepcopy(state)
+        self._ensure_contract_fields()
         return self.get()
 
     def set_status(self, status: str) -> dict[str, Any]:
@@ -120,7 +250,27 @@ class StateStore:
         self._state["agent"] = None
         return self.get()
 
+    def set_comms(self, degraded: bool, kbps: Optional[float] = None) -> dict[str, Any]:
+        link_kbps = kbps if kbps is not None else DEGRADED_COMMS_KBPS
+        if not degraded:
+            link_kbps = None
+
+        self._state["comms"] = {
+            "degraded": degraded,
+            "kbps": link_kbps,
+            "window_sec": COMMS_WINDOW_SECONDS,
+            **build_comms_proof(kbps=link_kbps),
+            "source_detail_level": "reduced" if degraded else "full",
+        }
+        return self.get()
+
     def apply_pipeline_result(self, result: dict[str, Any]) -> dict[str, Any]:
+        self._apply_core_result(result)
+        self._apply_tacnet_result(result)
+        self._apply_incident_tracking()
+        return self.get()
+
+    def _apply_core_result(self, result: dict[str, Any]) -> None:
         if "events" in result:
             self._state["events"] = result.get("events", [])
 
@@ -133,34 +283,49 @@ class StateStore:
 
         self._state["incident"] = result.get("incident")
 
-        if self._state.get("incident"):
-            incident_id = self._state["incident"].get("id")
-            tracking = self._state.get("operator_actions", {}).get(incident_id, {})
-            self._state["incident"]["operator_actions"] = tracking.get("action_status", {})
-            self._state["incident"]["operator_report"] = _build_operator_report(
-                self._state["incident"],
-                tracking,
-            )
-
-            if self._state["incident"].get("status") == "resolved":
-                resolved = self._state.setdefault("resolved_incidents", [])
-                if not any(item.get("id") == incident_id for item in resolved):
-                    resolved.append(deepcopy(self._state["incident"]))
-
         if "agent" in result:
             self._state["agent"] = result.get("agent")
 
-        self._state["map_state"] = result.get(
-            "map_state",
-            {
-                "tracks": [],
-                "assets": [],
-                "zones": [],
-                "threat_paths": [],
-            },
-        )
+        if "map_state" in result:
+            self._state["map_state"] = result.get("map_state") or build_empty_map_state()
 
-        return self.get()
+    def _apply_tacnet_result(self, result: dict[str, Any]) -> None:
+        for key in ("mesh", "compactions", "sitrep_delta"):
+            if key in result:
+                self._state[key] = deepcopy(result.get(key))
+
+        if "comms" in result:
+            self._state["comms"] = _merge_comms(result.get("comms"))
+
+    def _apply_incident_tracking(self) -> None:
+        incident = self._state.get("incident")
+        if not incident:
+            return
+
+        incident_id = incident.get("id")
+        tracking = self._state.get("operator_actions", {}).get(incident_id, {})
+        incident["operator_actions"] = tracking.get("action_status", {})
+        incident["operator_report"] = _build_operator_report(incident, tracking)
+        self._record_resolved_incident(incident, incident_id)
+
+    def _record_resolved_incident(
+        self,
+        incident: dict[str, Any],
+        incident_id: str,
+    ) -> None:
+        if incident.get("status") != "resolved":
+            return
+
+        resolved = self._state.setdefault("resolved_incidents", [])
+        if not any(item.get("id") == incident_id for item in resolved):
+            resolved.append(deepcopy(incident))
+
+    def _ensure_contract_fields(self) -> None:
+        self._state.setdefault("map_state", build_empty_map_state())
+        self._state.setdefault("mesh", build_default_mesh())
+        self._state.setdefault("compactions", [])
+        self._state.setdefault("sitrep_delta", build_empty_sitrep_delta())
+        self._state["comms"] = _merge_comms(self._state.get("comms"))
 
     def set_incident_action_status(
         self,

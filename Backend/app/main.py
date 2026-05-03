@@ -1,4 +1,11 @@
-# app/main.py
+"""FastAPI entrypoint for the Sentinel Forge and TacNet Edge demo API.
+
+The app keeps legacy routes such as `/incident/action` while adding the Branch B
+TacNet state fields and `/comms/degrade` endpoint. Route handlers remain thin:
+they mutate in-memory state, run the pipeline, then return the normalized
+`/state` contract.
+"""
+
 from pathlib import Path
 from typing import Optional
 
@@ -6,7 +13,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
 
 from app.adapters.mock import MockAdapter
 from app.api.routes.agent import router as agent_router
@@ -50,6 +56,11 @@ class IncidentActionUpdateRequest(BaseModel):
     note: Optional[str] = None
 
 
+class CommsDegradeRequest(BaseModel):
+    degraded: bool
+    kbps: Optional[float] = None
+
+
 def current_scenario() -> dict:
     return get_scenario_metadata(selected_scenario_id)
 
@@ -68,6 +79,7 @@ def run_and_apply_pipeline(state: dict) -> dict:
         previous_correlation=state.get("correlation"),
         operator_actions=operator_actions,
         previous_incident=state.get("incident"),
+        comms=state.get("comms"),
     )
 
     return store.apply_pipeline_result(result)
@@ -158,6 +170,14 @@ def get_state():
     return state
 
 
+@app.post("/comms/degrade")
+def degrade_comms(payload: CommsDegradeRequest):
+    state = store.set_comms(degraded=payload.degraded, kbps=payload.kbps)
+    state = run_and_apply_pipeline(state)
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
 @app.post("/reset")
 def reset():
     reset_adapter()
@@ -183,6 +203,7 @@ def resolve_incident(payload: IncidentResolveRequest):
         previous_correlation=state.get("correlation"),
         operator_actions=state.get("operator_actions", {}).get(payload.incident_id, {}).get("action_status", {}),
         previous_incident=incident,
+        comms=state.get("comms"),
     )
 
     return store.apply_pipeline_result(result)
@@ -202,6 +223,7 @@ def update_incident_action(payload: IncidentActionUpdateRequest):
         previous_correlation=state.get("correlation"),
         operator_actions=state.get("operator_actions", {}).get(payload.incident_id, {}).get("action_status", {}),
         previous_incident=state.get("incident"),
+        comms=state.get("comms"),
     )
 
     return store.apply_pipeline_result(result)
