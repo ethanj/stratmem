@@ -1,282 +1,294 @@
-# 🛡️ Sentinel Forge
+# TacNet Edge
 
-Sentinel Forge is a **cyber-physical threat interpretation engine** that transforms fragmented signals into a single, actionable decision.
+TacNet Edge is a browser-based command-and-control demo for degraded communications. It shows a fictional Raven Gap infantry-platoon scenario where raw field traffic is too large for a constrained link, while compact semantic metadata can still update the commander picture.
 
-Modern operators are overwhelmed by disconnected alerts across cybersecurity systems and physical sensors. Sentinel Forge addresses this by **fusing multi-domain telemetry**, identifying coordinated threats, and delivering **clear, prioritized actions in real time**.
+The current implementation is a FastAPI backend, a React/Vite S2 dashboard, and a browser sender prototype that transmits compact CBOR metadata over a WebRTC peer link. The live demo does not require iPhones, Bluetooth mesh, hosted LLM calls, or live cloud speech services.
 
-> This is not another alerting system.  
-> This is a **decision layer**.
+## Demo Story
 
----
+The pitch centers on one idea:
 
-## 🎯 The Problem
+> Current command and control takes too long to turn reports into a usable picture, and low-bandwidth or jammed environments make that delay worse.
 
-Security environments today suffer from:
+TacNet Edge demonstrates the counterfactual:
 
-- Alert fatigue from fragmented systems  
-- Lack of correlation between cyber and physical signals  
-- Slow decision-making under pressure  
-- High cognitive load on operators  
+1. Raven Gap starts under EW-degraded communications.
+2. The link is constrained to 3 Kbps over a 10-second window.
+3. Raw voice/report traffic does not fit.
+4. The same report is compressed into structured mission metadata.
+5. Compact CBOR metadata crosses the peer link.
+6. The S2 dashboard decodes and verifies the frame.
+7. The commander picture updates: map/readiness state, source context, and S2 view.
 
-Most systems show you *everything*.
+The current P0 readiness update uses the 9-line/CASEVAC fixture (`raven_gap_nine_line_1`).
 
-Very few systems tell you:
-- **What is actually happening**
-- **Why it matters**
-- **What to do next**
+## What The Demo Proves
 
----
+TacNet Edge demonstrates one core idea:
 
-## ⚔️ The Solution
+> Make every byte over the tactical mesh carry more command value.
 
-Sentinel Forge:
+The transmitted payload is not raw microphone audio and not the full transcript. It is compact semantic metadata that carries enough command value for the receiver to reconstruct the tactical meaning and update the commander picture.
 
-- Ingests cyber and physical signals  
-- Detects meaningful patterns  
-- Correlates signals across domains  
-- Produces a **single, high-confidence incident**  
-- Recommends **immediate response actions**  
+## Repository Layout
 
----
-
-## 🎬 Demo Overview
-
-Sentinel Forge demonstrates how weak signals evolve into a critical, actionable situation.
-
-### Scenario
-
-- Multiple failed login attempts  
-- Successful login from unfamiliar source  
-- Lateral movement across systems  
-- Drone activity near perimeter  
-
-### Output
-
+```text
+Backend/      FastAPI backend, Raven Gap state, receiver decode API
+Frontend/     React + Vite S2 dashboard and embedded WebRTC receiver
+prototype/    Browser sender prototype, signaling server, local STT path
+localdocs/    Local-only planning/reference docs, ignored by Git
+docs/         Local-only docs if present, ignored by Git
 ```
 
-CRITICAL — Coordinated Intrusion Attempt
-Confidence: 91%
+## Local Quick Start
 
-````
+Run these from the repository root in separate terminals.
 
-### Recommended Actions
+### Backend
 
-- Lock affected accounts  
-- Isolate compromised systems  
-- Dispatch patrol to Sector B  
-- Increase surveillance  
-
----
-
-## 🧠 What Makes Sentinel Forge Different
-
-Most systems generate alerts.
-
-Sentinel Forge:
-
-- Connects signals across **cyber and physical domains**
-- Reduces alert fatigue by consolidating noise
-- Provides **explainable reasoning** for every decision
-- Delivers **clear, actionable guidance**
-
-It answers:
-
-- **What is happening?**  
-- **Why is it happening?**  
-- **What should I do?**
-
----
-
-## 🔥 Core Principle
-
-Sentinel Forge is built to collapse complexity into a single moment:
-
-→ The system understands the situation  
-→ The operator knows exactly what to do  
-
----
-
-## 🧠 Architecture Overview
-
-### Core Data Flow
-
-Adapters → Ingestion → Normalization → Detection → Fusion → Interpretation → Incident → API → UI
-
----
-
-### System Layers
-
-#### 🔌 Adapters (Data Sources)
-
-- Mock (scenario engine)
-- Microsoft Defender (planned)
-- SIEM (Elastic / Splunk planned)
-
----
-
-#### 📥 Ingestion
-
-Handles incoming data streams:
-
-- Cyber signals (auth logs, network activity)
-- Physical signals (drone, perimeter, access)
-
----
-
-#### 🔄 Normalization
-
-Standardizes events into a unified format:
-
-```json
-{
-  "type": "...",
-  "source": "...",
-  "timestamp": "...",
-  "metadata": {}
-}
-````
-
----
-
-#### 🔍 Detection
-
-Extracts signals from events:
-
-* failed_logins
-* suspicious_login
-* lateral_movement
-* drone_activity
-
----
-
-#### 🧠 Fusion (Core Differentiator)
-
-Combines signals to detect coordinated behavior:
-
-* Cross-domain correlation
-* Confidence scoring
-* Temporal + contextual linking
-
----
-
-#### 🧾 Interpretation
-
-Outputs operator-ready intelligence:
-
-* Severity
-* Confidence
-* Explanation (“why”)
-* Recommended actions
-
----
-
-#### 🔗 Pipeline
-
-Orchestrates the system:
-
-1. Fetch event
-2. Normalize
-3. Detect signals
-4. Correlate
-5. Interpret
-6. Output incident
-
----
-
-## 📁 Project Structure
-
-```
-sentinel-forge/
-│
-├── server/
-├── client/
-├── docs/
-├── scripts/
-├── .env.example
-├── README.md
+```bash
+cd Backend
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
----
+Backend URL:
 
-## ⚛️ Frontend Overview
-
-```
-client/src/
-├── components/
-│   ├── IncidentCard.tsx
-│   ├── SignalBreakdown.tsx
-│   ├── ActionList.tsx
-│   ├── LogStream.tsx
-│
-├── pages/
-│   ├── Dashboard.tsx
-│
-├── hooks/
-│   ├── useSimulation.ts
-│
-├── services/
-│   ├── api.ts
+```text
+http://localhost:8000
 ```
 
----
+The backend loads `.env` from the repository root, not from `Backend/`. The primary demo path is deterministic and does not require API keys.
 
-## 🧠 State Model
+### Frontend Dashboard
 
-```python
-state = {
-    "events": [],
-    "signals": {},
-    "incident": None
-}
+```bash
+cd Frontend
+npm ci
+npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
----
+Same-machine dashboard URL:
 
-## 🔌 Integration Strategy
-
-Sentinel Forge uses a **pluggable adapter architecture**.
-
-### Current
-
-* Mock scenario engine
-
-### Planned
-
-* Microsoft Defender (Graph API)
-* SIEM systems (Elastic / Splunk)
-
-Adapters allow real-world integration without changing core logic.
-
----
-
-## 🚀 Future Work
-
-* Real-time streaming ingestion (Kafka / event bus)
-* Temporal + spatial correlation
-* Real SIEM + Defender integrations
-* Operator feedback loop
-* Deployment in production environments
-
----
-
-## 🏁 Why This Matters
-
-Sentinel Forge aligns with real-world defense and security needs:
-
-* Faster decision-making under pressure
-* Reduced cognitive load on operators
-* Improved situational awareness
-* Cross-domain intelligence fusion
-
----
-
-## 🔥 Final Thought
-
-> In high-stakes environments, more data is not the solution.
-> **Clarity is.**
-
-Sentinel Forge turns fragmented signals into clear defense.
-
+```text
+http://localhost:5173?room=0000
 ```
 
----
+Two-machine dashboard URL, when the sender prototype server runs on another laptop:
+
+```text
+http://localhost:5173?room=0000&signal=http://<sender-ip>:8787
+```
+
+The map should show an `S2 RX 0000` chip. That chip is the embedded WebRTC receiver status.
+
+### Sender Prototype
+
+On the sender laptop:
+
+```bash
+node prototype/server.mjs
+```
+
+Open:
+
+```text
+http://localhost:8787/?role=sender&room=0000
+```
+
+Use Chrome if possible. Browser microphone capture is most reliable when the sender page is opened as `localhost` on the sender laptop.
+
+If local STT is unavailable, use the sender page's sample buttons or manual transcript box. Those still exercise metadata extraction, CBOR encoding, shaped-link transmission, and receiver decoding.
+
+## Two-Machine Demo Topology
+
+Main/projected laptop:
+
+```text
+Backend:   http://localhost:8000
+Dashboard: http://localhost:5173?room=0000&signal=http://<sender-ip>:8787
+```
+
+Second/sender laptop:
+
+```text
+Prototype server: node prototype/server.mjs
+Sender page:      http://localhost:8787/?role=sender&room=0000
+```
+
+Important details:
+
+- The room is exact and case-sensitive. Use `0000`.
+- The dashboard is the receiver. Do not open a separate prototype receiver tab unless debugging.
+- The dashboard `signal=` query must point to the sender laptop's prototype server.
+- If both machines use different signaling servers, WebRTC will stay stuck connecting.
+
+Find the sender laptop IP on macOS:
+
+```bash
+ipconfig getifaddr en0
+```
+
+Fallback:
+
+```bash
+route -n get default | awk '/interface:/{print $2}' | xargs -I{} ipconfig getifaddr {}
+```
+
+## Demo Flow
+
+1. Start backend and frontend on the projected laptop.
+2. Start `prototype/server.mjs` on the sender laptop.
+3. Open the projected dashboard with `room=0000` and `signal=http://<sender-ip>:8787`.
+4. Open the sender page with `role=sender&room=0000`.
+5. On the sender page, click `Connect Peer`.
+6. Use `Sample CASEVAC`, a manual transcript, or local STT.
+7. Send the report.
+8. Watch the dashboard `S2 RX` chip and Raven Gap map/readiness state update.
+
+## Dashboard Controls
+
+On the S2 dashboard:
+
+- `REPLAY SCENARIO` starts the Raven Gap replay.
+- `STEP` advances one report manually.
+- `RESET` resets the scenario and clears received peer events.
+- `EW DEGRADED` toggles the degraded 3 Kbps link view.
+- `S2 RX 0000` shows embedded receiver status for the WebRTC peer link.
+- The overlay tabs expose reports, mesh, SITREP, timeline, voice, receiver, and assets panels.
+
+The `VOICE` overlay is the single-machine fallback path:
+
+- `SEND 9-LINE` submits the prerecorded 9-line fixture to the backend.
+- `COMPRESSION OFF/ON` controls whether the fixture is blocked as raw audio or processed as compressed metadata.
+- With compression on, the panel decodes a demo receiver frame and updates the same dashboard state used by the peer path.
+
+Use the two-machine sender path for the full live demo. Use the `VOICE` overlay only for local rehearsal or fallback.
+
+Clean reset before rehearsal or demo:
+
+```bash
+curl -X POST http://localhost:8000/reset
+```
+
+If the dashboard still shows a previous received frame after reset, hard-refresh the dashboard tab.
+
+## Backend API
+
+Core endpoints:
+
+```text
+GET  /scenarios
+GET  /state
+POST /scenario/select        { "scenario_id": "raven_gap" }
+POST /simulate/start
+POST /simulate/step
+POST /reset
+POST /comms/degrade          { "degraded": true, "kbps": 3 }
+POST /compression/toggle     { "enabled": true }
+POST /voice/report           { "audio_id": "raven_gap_nine_line_1" }
+POST /api/receiver/decode    { "frame_hex": "...", "room": "0000", "source": "embedded-s2-receiver" }
+```
+
+Voice-report smoke:
+
+```bash
+curl -s -X POST http://localhost:8000/comms/degrade \
+  -H 'Content-Type: application/json' \
+  -d '{"degraded": true, "kbps": 3}'
+
+curl -s -X POST http://localhost:8000/voice/report \
+  -H 'Content-Type: application/json' \
+  -d '{"audio_id": "raven_gap_nine_line_1"}'
+
+curl -s -X POST http://localhost:8000/compression/toggle \
+  -H 'Content-Type: application/json' \
+  -d '{"enabled": true}'
+
+curl -s -X POST http://localhost:8000/voice/report \
+  -H 'Content-Type: application/json' \
+  -d '{"audio_id": "raven_gap_nine_line_1"}'
+```
+
+Expected behavior:
+
+- Compression off: `voice_report.status` is `blocked_raw`; no voice event is appended.
+- Compression on: `voice_report.status` is `processed`; the 9-line event is appended once.
+- Receiver decode: `/api/receiver/decode` accepts compact frame bytes and adds a received event for dashboard state.
+
+Receiver fixture smoke:
+
+```bash
+curl -s -X POST http://localhost:8000/api/receiver/decode \
+  -H 'Content-Type: application/json' \
+  -d '{"use_fixture": true, "room": "0000", "source": "manual-smoke"}'
+```
+
+Check state:
+
+```bash
+curl -s http://localhost:8000/state
+```
+
+## Validation
+
+Backend tests:
+
+```bash
+cd Backend
+.venv/bin/python -m pytest tests/
+```
+
+Frontend build:
+
+```bash
+cd Frontend
+npm run build
+```
+
+Prototype local peer test, when needed:
+
+```bash
+node prototype/scripts/local-peer-test.mjs
+```
+
+## Troubleshooting
+
+If the dashboard shows `MOCK`, the backend is not reachable from the browser:
+
+```bash
+curl http://localhost:8000/state
+```
+
+If `S2 RX` stays connecting:
+
+- Confirm sender is opened at `http://localhost:8787/?role=sender&room=0000`.
+- Confirm dashboard URL includes `signal=http://<sender-ip>:8787`.
+- Confirm both sides use room `0000`.
+- Confirm `node prototype/server.mjs` is running on the sender laptop.
+- Use Chrome on both machines.
+
+If Squad 1 / 1-A RFL starts red before sending:
+
+```bash
+curl -X POST http://localhost:8000/reset
+```
+
+Then hard-refresh the dashboard tab.
+
+If ports are already in use:
+
+```bash
+lsof -nP -iTCP:8000 -sTCP:LISTEN
+lsof -nP -iTCP:5173 -sTCP:LISTEN
+lsof -nP -iTCP:8787 -sTCP:LISTEN
+```
+
+## Scope Notes
+
+- The current demo is a Mac/browser P0 runtime.
+- The live receiver path uses WebRTC DataChannel plus FastAPI receiver decode.
+- The transmitted payload is compact semantic metadata, not raw microphone audio.
+- The current map readiness update is driven by the 9-line/CASEVAC fixture.
+- iPhone, BLE mesh, LoRa, ATAK plugin, Cactus/Gemma mobile runtime, COMSEC, and tactical-radio integration are future paths, not current demo dependencies.
