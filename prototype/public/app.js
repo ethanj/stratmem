@@ -9,6 +9,7 @@ import { compactMetadata, expandMetadata, extractMetadata, reconstructText, samp
 import { renderLinkMetrics } from "./metrics.js?v=compression-visual-20260503";
 import { createId } from "./ids.js?v=uuid-fallback-20260503";
 import { PeerLink } from "./link.js?v=uuid-fallback-20260503";
+import { createS2Bridge } from "./s2-bridge.js?v=s2-trigger-20260503";
 import { OfflineWhisperTranscriber } from "./stt.js?v=peer-diagnostics-20260503";
 
 const frameTypes = {
@@ -38,13 +39,23 @@ const ui = Object.fromEntries(
     "jitterInput", "jitterLabel", "talkButton", "manualTranscript",
     "sendTranscript", "transcriptView", "metadataView", "binaryView",
     "metricsView", "timelineView", "receiverMetadata", "receiverSummary",
-    "speakLast", "killSwitch", "deviceStatus",
+    "speakLast", "killSwitch", "deviceStatus", "s2EndpointInput", "s2Status",
   ].map((id) => [id, document.getElementById(id)]),
 );
+
+const s2Bridge = createS2Bridge({
+  endpointInput: ui.s2EndpointInput,
+  statusNode: ui.s2Status,
+  roomInput: ui.roomInput,
+  addEvent,
+  logClient,
+  toHex,
+});
 
 bootstrap();
 
 async function bootstrap() {
+  s2Bridge.init();
   await checkServer();
   bindControls();
   updateRole();
@@ -335,6 +346,9 @@ function receiveFrame(bytes, receivedAt) {
   ui.deviceStatus.classList.remove("dead");
   addEvent(`Received ${bytes.length} bytes`);
   renderMetrics({ bytes: bytes.length, receivedAt });
+  if (ui.roleSelect.value === "receiver") {
+    void s2Bridge.notifyFrame(bytes, receivedAt);
+  }
 }
 
 function receiveKillSwitchFrame(frame, bytes, receivedAt) {

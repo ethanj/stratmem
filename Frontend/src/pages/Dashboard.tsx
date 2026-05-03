@@ -1,5 +1,5 @@
 // pages/Dashboard.tsx
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./Dashboard.css";
 
 import TopBar from "../components/TopBar";
@@ -54,6 +54,7 @@ const OVERLAY_TABS: { key: OverlayKey; label: string }[] = [
   { key: "voice", label: "VOICE" },
   { key: "assets", label: "ASSETS" },
 ];
+const RECEIVER_POLL_MS = 1200;
 
 /**
  * Dashboard layout for the S2 readiness demo.
@@ -87,6 +88,8 @@ export default function Dashboard() {
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>("plt-raven");
   const [expandedEntityIds, setExpandedEntityIds] = useState<string[]>([]);
   const [openOverlay, setOpenOverlay] = useState<OverlayKey | null>(null);
+  const refreshRef = useRef(refresh);
+  const receiverTriggerIdsRef = useRef<Set<string>>(new Set());
   const receiverEvents = (state as { receiver_events?: ReceiverDecodeEvent[] }).receiver_events;
   const entities = (state.map_state?.entities || []) as TacticalEntity[];
   const selectedEntity = selectedEntityId
@@ -110,6 +113,7 @@ export default function Dashboard() {
     setSelectedEntityId("plt-raven");
     setExpandedEntityIds([]);
     setOpenOverlay(null);
+    receiverTriggerIdsRef.current.clear();
     await reset();
   };
 
@@ -129,6 +133,48 @@ export default function Dashboard() {
       current.includes(entity.id) ? current : [...current, entity.id]
     ));
   };
+
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+
+  useEffect(() => {
+    if (isOffline) return undefined;
+    let inFlight = false;
+
+    const interval = window.setInterval(async () => {
+      if (inFlight || isBusy) return;
+      inFlight = true;
+      try {
+        await refreshRef.current();
+      } finally {
+        inFlight = false;
+      }
+    }, RECEIVER_POLL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [isBusy, isOffline]);
+
+  useEffect(() => {
+    const event = latestReceiverCasevac(receiverEvents);
+    if (!event) return;
+
+    const eventKey = receiverEventKey(event);
+    if (receiverTriggerIdsRef.current.has(eventKey)) return;
+    receiverTriggerIdsRef.current.add(eventKey);
+
+    const triggerNineLine = async () => {
+      try {
+        await setCompressionEnabled(true);
+        await submitVoiceReport();
+        await refreshRef.current();
+      } catch (error) {
+        console.error("[S2 receiver] Failed to auto-trigger 9-line flow", error);
+      }
+    };
+
+    void triggerNineLine();
+  }, [receiverEvents, setCompressionEnabled, submitVoiceReport]);
 
   return (
     <div className="dashboard-shell">
@@ -302,4 +348,15 @@ function childEntities(entities: TacticalEntity[], parentId: string) {
 
 function assetRows(value: unknown): AssetRows {
   return Array.isArray(value) ? value as AssetRows : undefined;
+}
+
+function latestReceiverCasevac(events?: ReceiverDecodeEvent[]) {
+  return (events ?? []).find((event) => {
+    const reportType = String(event.metadata?.report_type || "").toLowerCase();
+    return reportType === "casevac" || reportType === "nine_line_medevac";
+  });
+}
+
+function receiverEventKey(event: ReceiverDecodeEvent) {
+  return `${event.id || `${event.room}-${event.sequence}`}-${event.received_at}-${event.checksum ?? ""}`;
 }

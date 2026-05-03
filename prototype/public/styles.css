@@ -133,7 +133,7 @@ p {
 
 .control-bar {
   display: grid;
-  grid-template-columns: 140px 180px 130px 170px minmax(170px, 1fr) minmax(170px, 1fr);
+  grid-template-columns: 120px 160px minmax(190px, 1fr) 130px 170px minmax(170px, 1fr) minmax(170px, 1fr);
   gap: 12px;
   align-items: end;
   margin-top: 14px;

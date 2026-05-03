@@ -74,3 +74,19 @@ def test_state_includes_receiver_events_after_decode():
     casualty = next(entity for entity in entities if entity["id"] == "1st_squad_rifle")
     assert casualty["status"]["health"] == "red"
     assert casualty["report_status"] == "CASEVAC pending"
+
+
+def test_receiver_decode_allows_lan_browser_preflight():
+    """Receiver bridge can post to S2 backend from a LAN-served browser page."""
+    client = TestClient(app)
+
+    response = client.options(
+        "/api/receiver/decode",
+        headers={
+            "origin": "http://192.168.1.42:8787",
+            "access-control-request-method": "POST",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://192.168.1.42:8787"

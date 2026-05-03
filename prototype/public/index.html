@@ -18,6 +18,7 @@
           <span id="serverStatus">Server: checking</span>
           <span id="peerStatus">Peer: idle</span>
           <span id="sttStatus">STT: idle</span>
+          <span id="s2Status" class="receiver-only">S2: idle</span>
         </div>
       </header>
 
@@ -32,6 +33,10 @@
         <label>
           Room
           <input id="roomInput" value="raven-gap" autocomplete="off">
+        </label>
+        <label class="receiver-only">
+          S2 Backend
+          <input id="s2EndpointInput" value="http://localhost:8000" autocomplete="off">
         </label>
         <button id="connectPeer">Connect Peer</button>
         <button id="connectStt" class="sender-only">Connect Offline STT</button>

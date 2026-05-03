@@ -45,6 +45,20 @@ load_dotenv(ROOT_DIR / ".env")
 
 
 app = FastAPI(title="Sentinel Forge API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=(
+        r"^http://("
+        r"localhost|127\.0\.0\.1|0\.0\.0\.0|"
+        r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+        r"192\.168\.\d{1,3}\.\d{1,3}|"
+        r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
+        r")(:\d+)?$"
+    ),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(agent_router)
 app.include_router(receiver_router)
 
@@ -104,7 +118,6 @@ def run_and_apply_pipeline(state: dict) -> dict:
     )
 
     return store.apply_pipeline_result(result)
-
 
 @app.get("/scenarios")
 def list_scenarios():
@@ -348,12 +361,3 @@ def update_incident_action(payload: IncidentActionUpdateRequest):
     )
 
     return store.apply_pipeline_result(result)
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
