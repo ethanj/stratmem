@@ -161,7 +161,7 @@ export default function Dashboard() {
   }, [isBusy, isOffline]);
 
   useEffect(() => {
-    const event = latestReceiverCasevac(receiverEvents);
+    const event = latestReceiverTrigger(receiverEvents);
     if (!event) return;
 
     const eventKey = receiverEventKey(event);
@@ -174,7 +174,7 @@ export default function Dashboard() {
         await submitVoiceReport();
         await refreshRef.current();
       } catch (error) {
-        console.error("[S2 receiver] Failed to auto-trigger 9-line flow", error);
+        console.error("[S2 receiver] Failed to auto-trigger voice flow", error);
       }
     };
 
@@ -370,10 +370,9 @@ function assetRows(value: unknown): AssetRows {
   return Array.isArray(value) ? value as AssetRows : undefined;
 }
 
-function latestReceiverCasevac(events?: ReceiverDecodeEvent[]) {
+function latestReceiverTrigger(events?: ReceiverDecodeEvent[]) {
   return (events ?? []).find((event) => {
-    const reportType = String(event.metadata?.report_type || "").toLowerCase();
-    return reportType === "casevac" || reportType === "nine_line_medevac";
+    return event.verified && event.frame_type === "metadata";
   });
 }
 

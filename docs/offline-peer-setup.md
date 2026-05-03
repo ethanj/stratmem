@@ -64,10 +64,10 @@ frame to the S2 backend decode endpoint:
 POST http://<s2-backend>:8000/api/receiver/decode
 ```
 
-The S2 dashboard also polls `/state`. When it sees a decoded 9-line/CASEVAC
-receiver event, it turns compression on, submits the existing 9-line flow, and
-refreshes the COP. This is the trigger mechanism that replaces manually clicking
-`SEND 9-LINE` in the S2 `VOICE` tab.
+The S2 dashboard also polls `/state`. When it sees any verified decoded metadata
+frame from the peer receiver, it turns compression on, submits the existing
+9-line flow, and refreshes the COP. This is the trigger mechanism that replaces
+manually clicking `SEND 9-LINE` in the S2 `VOICE` tab.
 
 ### Start S2 On The Receiver Laptop
 
@@ -91,7 +91,8 @@ Open the S2 dashboard:
 http://localhost:5173?room=0000
 ```
 
-If the sender signaling server is running on a different laptop, add `signal`:
+If the sender signaling server is running on a different laptop, add `signal`
+with the sender laptop's LAN IP:
 
 ```text
 http://localhost:5173?room=0000&signal=http://10.1.60.244:8787
@@ -176,8 +177,9 @@ you are debugging the standalone prototype.
 4. Sender opens `http://localhost:8787/?role=sender&room=0000`.
 5. Sender clicks `Connect Peer`.
 6. Sender clicks `Connect Offline STT`.
-7. Sender holds `Hold to Talk`, speaks a short 9-line/CASEVAC report, then releases.
-8. The S2 dashboard should update automatically: the `VOICE` tab shows the
+7. Sender holds `Hold to Talk`, speaks a short mission report, then releases.
+8. Any verified metadata message should trigger the S2 dashboard automatically:
+    the `VOICE` tab shows the
     received binary frame, Soldier 1 shows the 9-line transmission, and Soldier
     2 changes to critical/CASEVAC pending.
 9. Sender can click `Kill Switch` to send a control frame that marks the source
