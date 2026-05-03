@@ -79,6 +79,9 @@ def test_v3_compression_switch_flow():
     assert state["incident"]["evidence_lines"]
     assert "what_changed" in state["sitrep_delta"]
     assert "contact_markers" in state["map_state"]
+    assert "entities" in state["map_state"]
+    assert any(entity["entity_type"] == "personnel" for entity in state["map_state"]["entities"])
+    assert any(entity["id"] == "jltv_v1" for entity in state["map_state"]["entities"])
     assert state["comms"]["raw_bytes"] > state["comms"]["budget_bytes"]
     assert state["comms"]["compacted_bytes"] <= state["comms"]["budget_bytes"]
 

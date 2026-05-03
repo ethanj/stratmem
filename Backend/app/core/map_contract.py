@@ -54,6 +54,9 @@ def build_contract_friendly_markers(
         {
             "id": marker["id"],
             "label": marker["label"],
+            "kind": marker.get("kind"),
+            "unit": marker.get("unit"),
+            "status": marker.get("status"),
             **marker["location"],
         }
         for marker in markers
@@ -69,6 +72,10 @@ def build_contract_contact_markers(
             "id": marker["id"].replace("contact-", "ctc_"),
             "label": marker["label"] if marker["severity"] == "low" else "?",
             **marker["location"],
+            "kind": marker.get("kind"),
+            "severity": marker.get("severity"),
+            "source_event_id": marker.get("source_event_id"),
+            "message": marker.get("message"),
             "confidence": confidence_label(marker["severity"]),
         }
         for marker in markers

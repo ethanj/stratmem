@@ -11,14 +11,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.map_contract import (
-    build_contract_checkpoints,
-    build_contract_contact_markers,
-    build_contract_friendly_markers,
-    build_contract_nais,
-    build_contract_risk_zones,
-    build_mgrs_grid_anchor,
-)
+from app.core.map_contract import build_contract_checkpoints, build_contract_contact_markers
+from app.core.map_contract import build_contract_friendly_markers, build_contract_nais
+from app.core.map_contract import build_contract_risk_zones, build_mgrs_grid_anchor
+from app.core.map_entities import build_map_entities
 
 
 RAVEN_ANCHOR = {"lat": 37.4755, "lon": -118.6818}
@@ -90,6 +86,7 @@ def build_map_state(
     contact_markers = build_contact_markers(raven_events)
     legacy_risk_zones = build_risk_zones(contact_markers, compactions)
     friendly_markers = build_friendly_markers(raven_events)
+    entities = build_map_entities(raven_events, contact_markers)
 
     return {
         "mgrs_grid_anchor": build_mgrs_grid_anchor(RAVEN_ANCHOR),
@@ -101,6 +98,7 @@ def build_map_state(
         "contact_markers": build_contract_contact_markers(contact_markers),
         "risk_zones": build_contract_risk_zones(legacy_risk_zones),
         "routes": ROUTES,
+        "entities": entities,
         "event_pulses": build_event_pulses(raven_events),
         "risk_level": calculate_risk_level(signal_kinds, compactions),
         "phase": determine_phase(signal_kinds, compactions, raven_events, comms),

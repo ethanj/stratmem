@@ -189,6 +189,8 @@ export interface FriendlyMarker extends LatLon {
   id: string;
   label: string;
   kind?: string;
+  unit?: string;
+  status?: string;
 }
 
 export interface ContactConfidence {
@@ -199,6 +201,10 @@ export interface ContactConfidence {
 export interface ContactMarker extends LatLon, ContactConfidence {
   id: string;
   label: string;
+  kind?: string;
+  severity?: string;
+  source_event_id?: string;
+  message?: string;
 }
 
 export interface RiskZone extends LatLon {
@@ -225,11 +231,46 @@ export interface MapState {
   contact_markers?: ContactMarker[];
   risk_zones?: RiskZone[];
   routes?: Route[];
+  entities?: TacticalEntity[];
   /** Existing Sentinel Forge fields preserved for legacy paths. */
   tracks?: unknown[];
   threat_paths?: unknown[];
   assets?: unknown[];
   risk_level?: string;
+}
+
+export interface TacticalStatus {
+  health?: string;
+  readiness?: string;
+  ammo?: string;
+  comms?: string;
+  mobility?: string;
+  battery?: string;
+  fuel?: string;
+  [key: string]: string | undefined;
+}
+
+export interface TacticalHistoryItem {
+  event_id?: string | null;
+  message: string;
+}
+
+export interface TacticalEntity extends LatLon {
+  id: string;
+  parent_id?: string | null;
+  label: string;
+  callsign: string;
+  entity_type: "platoon" | "squad" | "personnel" | "vehicle" | "drone" | "sensor" | "contact" | string;
+  affiliation: "friend" | "hostile" | "neutral" | "unknown" | string;
+  nationality: string;
+  sidc: string;
+  echelon?: string | null;
+  mgrs?: string;
+  status: TacticalStatus;
+  history: TacticalHistoryItem[];
+  role?: string;
+  personnel_available?: number;
+  personnel_total?: number;
 }
 
 /**

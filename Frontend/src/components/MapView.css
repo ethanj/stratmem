@@ -1,4 +1,4 @@
-/* MapView.css — Map container, MapLibre overrides, markers, overlays */
+/* MapView.css — S2/MI common operating picture, MIL markers, detail drawer */
 
 .map-panel {
   flex: 1;
@@ -8,16 +8,9 @@
   position: relative;
 }
 
-.map-panel.risk-elevated { border-color: var(--amber-dim); }
-.map-panel.risk-critical { border-color: var(--red-dim); }
-
-.map-mgrs-pill {
-  font-size: 9px;
-  padding: 1px 4px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
+.map-panel.risk-high,
+.map-panel.risk-critical {
+  border-color: var(--amber-dim);
 }
 
 .map-header-controls {
@@ -26,26 +19,38 @@
   gap: 6px;
 }
 
+.map-mgrs-pill,
 .map-mode-btn {
-  font-size: 9px;
-  padding: 2px 6px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
   border: 1px solid var(--border);
   border-radius: 2px;
   color: var(--label);
-  text-transform: uppercase;
+  background: rgba(13, 18, 13, 0.88);
+  font-size: 9px;
   letter-spacing: 0.06em;
+}
+
+.map-mgrs-pill {
+  padding: 0 6px;
+}
+
+.map-mode-btn {
+  padding: 0 7px;
 }
 
 .map-mode-btn:hover {
   border-color: var(--border-bright);
-  color: var(--text);
+  color: var(--text-bright);
 }
 
 .real-map-shell {
   flex: 1;
+  min-height: 0;
   position: relative;
   overflow: hidden;
-  background: #0b1624;
+  background: #07100b;
 }
 
 .real-map {
@@ -53,126 +58,299 @@
   height: 100%;
 }
 
-/* Invert OpenTopoMap to dark tactical aesthetic (tile mode only) */
 .real-map-shell.topo-dark .real-map canvas {
-  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1);
+  filter: invert(1) hue-rotate(180deg) brightness(0.78) contrast(1.08) saturate(0.78);
 }
 
-/* MapLibre overrides */
 .real-map .maplibregl-ctrl-group {
-  background: var(--panel) !important;
+  background: rgba(8, 12, 8, 0.86) !important;
   border: 1px solid var(--border) !important;
   border-radius: 2px !important;
 }
 
-.real-map .maplibregl-ctrl-group button {
-  border-bottom: 1px solid var(--border) !important;
+.real-map .maplibregl-ctrl button {
+  filter: invert(1) hue-rotate(120deg);
 }
 
-.real-map .maplibregl-ctrl-group button + button {
-  border-top: none !important;
-}
-
-.real-map .maplibregl-ctrl-attrib {
-  background: rgba(8, 12, 8, 0.8) !important;
-  color: var(--muted) !important;
-  font-size: 9px !important;
-}
-
-/* Vignette + scan overlay */
 .map-vignette {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(8, 12, 8, 0.6) 100%);
+  background:
+    radial-gradient(ellipse at center, transparent 56%, rgba(8, 12, 8, 0.62) 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 5px, rgba(74, 122, 80, 0.025) 5px, rgba(74, 122, 80, 0.025) 6px);
 }
 
-.map-scan-overlay {
+.map-layer-bar,
+.map-count-strip {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.03;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(58, 90, 64, 0.5) 2px,
-    rgba(58, 90, 64, 0.5) 3px
-  );
-}
-
-/* Legend */
-.map-legend {
-  position: absolute;
-  bottom: 6px;
-  left: 6px;
+  z-index: 8;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(42, 58, 42, 0.78);
+  border-radius: 3px;
+  background: rgba(8, 12, 8, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+.map-layer-bar {
+  top: 8px;
+  left: 8px;
+}
+
+.map-count-strip {
+  right: 8px;
+  bottom: 8px;
+  color: var(--muted);
   font-size: 9px;
-  color: var(--label);
+  letter-spacing: 0.05em;
+}
+
+.map-layer-bar button {
+  min-width: 58px;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--muted);
+  background: rgba(13, 18, 13, 0.76);
+  font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  pointer-events: none;
+  letter-spacing: 0.06em;
 }
 
-.map-legend span {
-  display: flex;
-  align-items: center;
-  gap: 3px;
+.map-layer-bar button.active {
+  border-color: var(--border-bright);
+  color: var(--text-bright);
+  background: rgba(51, 136, 187, 0.16);
 }
 
-.map-legend b {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.map-legend b.blue { background: var(--status-blue); }
-.map-legend b.red { background: var(--red); }
-.map-legend b.gray { background: var(--muted); }
-
-.map-legend b.orange-line,
-.map-legend b.cyan-line {
-  border-radius: 0;
-  height: 2px;
-  width: 12px;
-}
-
-.map-legend b.orange-line { background: #fb923c; }
-.map-legend b.cyan-line { background: #22d3ee; }
-
-.map-legend.tactical-counts {
-  left: auto;
-  right: 6px;
-  bottom: 6px;
-}
-
-.map-count {
-  font-variant-numeric: tabular-nums;
+.mil-marker {
+  border: 0;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
   color: var(--text);
+  background: transparent;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
 }
 
-/* Geo markers */
-.geo-marker {
-  display: flex;
-  align-items: center;
-  gap: 3px;
+.mil-marker-symbol {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 2px;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
+}
+
+.mil-marker-symbol svg {
+  max-width: 42px;
+  max-height: 42px;
+}
+
+.mil-marker-label {
+  max-width: 92px;
+  padding: 1px 4px;
+  border: 1px solid rgba(42, 58, 42, 0.74);
+  border-radius: 2px;
+  color: var(--text-bright);
+  background: rgba(8, 12, 8, 0.86);
   font-size: 9px;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--text);
-  white-space: nowrap;
-  pointer-events: none;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.geo-marker.friendly { color: var(--status-blue); }
-.geo-marker.contact { color: var(--red); }
-.geo-marker.contact.confirmed { color: var(--red); font-weight: 700; }
-.geo-marker.contact.suspected { color: var(--amber); }
-.geo-marker.contact.lost { color: var(--muted); }
-.geo-marker.checkpoint { color: var(--muted); }
-.geo-marker.nai-label { color: #22d3ee; font-size: 8px; opacity: 0.7; }
+.mil-marker:hover .mil-marker-label,
+.mil-marker:focus-visible .mil-marker-label {
+  border-color: var(--border-bright);
+  color: white;
+}
 
-.geo-marker-icon {
-  font-size: 12px;
+.mil-marker.hostile .mil-marker-label {
+  border-color: rgba(204, 51, 51, 0.52);
+  color: #fecaca;
+}
+
+.mil-marker.air .mil-marker-label,
+.mil-marker.sensor .mil-marker-label {
+  color: #c7f9ff;
+}
+
+.mil-marker.amber .mil-marker-symbol {
+  filter: drop-shadow(0 0 8px rgba(212, 160, 23, 0.46));
+}
+
+.mil-marker.red .mil-marker-symbol,
+.mil-marker.hostile .mil-marker-symbol {
+  filter: drop-shadow(0 0 10px rgba(204, 51, 51, 0.52));
+}
+
+.entity-drawer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  bottom: 42px;
+  z-index: 10;
+  width: min(360px, calc(100% - 16px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(74, 122, 80, 0.52);
+  border-radius: 3px;
+  background: rgba(8, 12, 8, 0.94);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(9px);
+}
+
+.entity-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.entity-drawer-header h3 {
+  margin-top: 3px;
+  color: var(--text-bright);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.entity-drawer-header button,
+.entity-expand-btn {
+  min-height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--label);
+  background: rgba(13, 18, 13, 0.9);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+}
+
+.entity-drawer-header button {
+  padding: 0 8px;
+}
+
+.entity-affiliation {
+  color: var(--status-blue);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.entity-affiliation.hostile {
+  color: var(--red);
+}
+
+.entity-drawer-grid,
+.entity-status-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.entity-drawer-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.entity-status-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.entity-fact,
+.entity-status,
+.entity-readiness-bar {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(42, 58, 42, 0.75);
+  border-radius: 2px;
+  background: rgba(13, 18, 13, 0.78);
+}
+
+.entity-fact span,
+.entity-status span,
+.entity-readiness-bar span,
+.entity-history h4 {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.entity-fact strong,
+.entity-status strong,
+.entity-readiness-bar strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-bright);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-status.green strong {
+  color: var(--status-green);
+}
+
+.entity-status.amber strong {
+  color: var(--amber);
+}
+
+.entity-status.red strong {
+  color: var(--red);
+}
+
+.entity-expand-btn {
+  width: 100%;
+}
+
+.entity-expand-btn:hover {
+  border-color: var(--border-bright);
+  color: var(--text-bright);
+}
+
+.entity-history {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+}
+
+.entity-history-item {
+  padding: 7px;
+  border-left: 2px solid var(--border-bright);
+  background: rgba(13, 18, 13, 0.66);
+}
+
+.entity-history-item span {
+  color: var(--label);
+  font-size: 9px;
+}
+
+.entity-history-item p {
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+@media (max-width: 760px) {
+  .map-layer-bar {
+    right: 8px;
+    flex-wrap: wrap;
+  }
+
+  .entity-drawer {
+    top: auto;
+    width: calc(100% - 16px);
+    max-height: 70%;
+  }
 }
