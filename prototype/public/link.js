@@ -4,13 +4,15 @@
  * Signaling is server-assisted. Payload transfer is peer-to-peer via DataChannel
  * once connected, with a byte-budget delay applied before send.
  */
+import { createId } from "./ids.js?v=uuid-fallback-20260503";
+
 export class PeerLink extends EventTarget {
   constructor({ room, role }) {
     super();
     this.room = room;
     this.role = role;
-    this.clientId = crypto.randomUUID();
-    this.sessionId = role === "sender" ? crypto.randomUUID() : "";
+    this.clientId = createId();
+    this.sessionId = role === "sender" ? createId() : "";
     this.lastSignalId = 0;
     this.channel = null;
     this.pc = new RTCPeerConnection({

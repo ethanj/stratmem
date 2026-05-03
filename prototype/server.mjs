@@ -102,7 +102,7 @@ async function handleSignal(req, res, url) {
 
   if (req.method === "DELETE") {
     room.messages = [];
-    await writeLiveLog({ source: "server", event: "signal_reset", room: roomId });
+    await writeLiveLog({ source: "server", event: "signal_reset", room: roomId, remote: req.socket.remoteAddress });
     jsonResponse(res, 200, { ok: true });
     return;
   }
@@ -126,6 +126,7 @@ async function handleSignal(req, res, url) {
       source: "server",
       event: "signal_post",
       room: roomId,
+      remote: req.socket.remoteAddress,
       signal_id: entry.id,
       sender_id: entry.sender_id,
       session_id: entry.session_id,
@@ -139,7 +140,14 @@ async function handleSignal(req, res, url) {
     const since = Number.parseInt(url.searchParams.get("since") ?? "0", 10);
     const messages = room.messages.filter((entry) => entry.id > since);
     if (messages.length > 0) {
-      await writeLiveLog({ source: "server", event: "signal_poll", room: roomId, since, count: messages.length });
+      await writeLiveLog({
+        source: "server",
+        event: "signal_poll",
+        room: roomId,
+        remote: req.socket.remoteAddress,
+        since,
+        count: messages.length,
+      });
     }
     jsonResponse(res, 200, { messages });
     return;
@@ -334,7 +342,10 @@ async function serveStatic(req, res, url) {
         user_agent: req.headers["user-agent"] ?? "",
       });
     }
-    res.writeHead(200, { "content-type": contentType });
+    if (requested === "/app.js" || requested === "/link.js") {
+      await writeLiveLog({ source: "server", event: "asset_load", path: requested, remote: req.socket.remoteAddress });
+    }
+    res.writeHead(200, { "content-type": contentType, "cache-control": "no-store" });
     res.end(file);
   } catch {
     textResponse(res, 404, "Not found");

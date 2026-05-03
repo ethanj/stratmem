@@ -4,17 +4,18 @@
  * Coordinates STT, deterministic metadata extraction, CBOR encoding, shaped
  * WebRTC transport, receiver decode, S2 rendering, TTS, and live metrics.
  */
-import { decodeFrame, encodeFrame, fnv1a, toHex } from "./codec.js";
-import { compactMetadata, expandMetadata, extractMetadata, reconstructText, samples, validateMetadata } from "./metadata.js";
-import { PeerLink } from "./link.js";
-import { OfflineWhisperTranscriber } from "./stt.js";
+import { decodeFrame, encodeFrame, fnv1a, toHex } from "./codec.js?v=peer-diagnostics-20260503";
+import { compactMetadata, expandMetadata, extractMetadata, reconstructText, samples, validateMetadata } from "./metadata.js?v=peer-diagnostics-20260503";
+import { createId } from "./ids.js?v=uuid-fallback-20260503";
+import { PeerLink } from "./link.js?v=uuid-fallback-20260503";
+import { OfflineWhisperTranscriber } from "./stt.js?v=peer-diagnostics-20260503";
 
 const frameTypes = {
   metadata: 1,
   deviceDead: 2,
 };
 
-const clientId = crypto.randomUUID();
+const clientId = createId();
 
 const state = {
   peer: null,
@@ -46,6 +47,7 @@ async function bootstrap() {
   updateRole();
   updateLinkLabels();
   renderMetrics();
+  logClient("client_boot", { href: window.location.href, userAgent: navigator.userAgent });
 }
 
 async function checkServer() {

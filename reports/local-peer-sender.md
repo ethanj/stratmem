@@ -1,19 +1,19 @@
 # Local Peer Test - Sender
 
 - Status: PASS
-- Started at: 2026-05-03T04:55:08.959Z
-- Room: local-peer-mopar9nj
-- URL: http://localhost:8787
+- Started at: 2026-05-03T05:10:13.755Z
+- Room: local-peer-mopbansr
+- URL: http://10.1.60.244:8787
 - Error: none
 
 ## Actions
-- Reset signaling room local-peer-mopar9nj
+- Reset signaling room local-peer-mopbansr
 - Launch sender Chrome on CDP port 9331
 - Launch receiver Chrome on CDP port 9332
-- Opened sender client at http://localhost:8787
-- Opened receiver client at http://localhost:8787
-- Prepared receiver client with room local-peer-mopar9nj
-- Prepared sender client with room local-peer-mopar9nj
+- Opened sender client at http://10.1.60.244:8787
+- Opened receiver client at http://10.1.60.244:8787
+- Prepared receiver client with room local-peer-mopbansr
+- Prepared sender client with room local-peer-mopbansr
 - receiver clicked Connect Peer
 - sender clicked Connect Peer
 - Both peer DataChannels opened
@@ -40,7 +40,7 @@ Alpha Two is at grid 12345678, one casualty, low ammo, requesting resupply at ch
   "payload": {
     "1": "device_dead",
     "2": "sender",
-    "3": "2026-05-03T04:55:11.495Z",
+    "3": "2026-05-03T05:10:16.478Z",
     "4": "Source device marked dead by operator."
   }
 }
@@ -49,7 +49,7 @@ Alpha Two is at grid 12345678, one casualty, low ammo, requesting resupply at ch
 ## Binary
 ```text
 131 bytes
-a6 00 01 01 02 02 78 18 32 30 32 36 2d 30 35 2d 30 33 54 30 34 3a 35 35 3a 31 31 2e 34 39 35 5a 04 1a cf 19 ba a1 05 02 06 a4 01 6b 64 65 76 69 63 65 5f 64 65 61 64 02 66 73 65 6e 64 65 72 03 78 18 32 30 32 36 2d 30 35 2d 30 33 54 30 34 3a 35 35 3a 31 31 2e 34 39 35 5a 04 78 26 53 6f 75 72 63 65 20 64 65 76 69 63 65 20 6d 61 72 6b 65 64 20 64 65 61 64 20 62 79 20 6f 70 65 72 61 74 6f 72 2e
+a6 00 01 01 02 02 78 18 32 30 32 36 2d 30 35 2d 30 33 54 30 35 3a 31 30 3a 31 36 2e 34 37 38 5a 04 1a 08 ba 4a 83 05 02 06 a4 01 6b 64 65 76 69 63 65 5f 64 65 61 64 02 66 73 65 6e 64 65 72 03 78 18 32 30 32 36 2d 30 35 2d 30 33 54 30 35 3a 31 30 3a 31 36 2e 34 37 38 5a 04 78 26 53 6f 75 72 63 65 20 64 65 76 69 63 65 20 6d 61 72 6b 65 64 20 64 65 61 64 20 62 79 20 6f 70 65 72 61 74 6f 72 2e
 ```
 
 ## Receiver Metadata
@@ -63,14 +63,14 @@ a6 00 01 01 02 02 78 18 32 30 32 36 2d 30 35 2d 30 33 54 30 34 3a 35 35 3a 31 31
 ```
 
 ## Timeline
-- 9:55:11 PM - Sent 131 bytes
-- 9:55:11 PM - Queued 131 bytes for 486 ms
-- 9:55:11 PM - Kill switch control frame built
-- 9:55:11 PM - Sent 178 bytes
-- 9:55:10 PM - Queued 178 bytes for 516 ms
-- 9:55:10 PM - Mission metadata extracted
-- 9:55:10 PM - Peer data channel opened
-- 9:55:10 PM - Peer state: connected/connected
+- 10:10:16 PM - Sent 131 bytes
+- 10:10:16 PM - Queued 131 bytes for 462 ms
+- 10:10:16 PM - Kill switch control frame built
+- 10:10:16 PM - Sent 178 bytes
+- 10:10:15 PM - Queued 178 bytes for 604 ms
+- 10:10:15 PM - Mission metadata extracted
+- 10:10:15 PM - Peer data channel opened
+- 10:10:15 PM - Peer state: connected/connected
 
 ## Console
 - none
