@@ -70,6 +70,10 @@ Start the server:
 node prototype/server.mjs
 ```
 
+The server binds to `0.0.0.0:8787`, which means it listens on localhost and the
+sender laptop's LAN interfaces. There is no separate receiver listener in the P0
+demo; the receiver browser connects outbound to this sender-hosted server.
+
 Find the sender LAN IP:
 
 ```bash
@@ -95,6 +99,11 @@ http://10.1.60.244:8787
 
 The receiver does not need to clone the repo unless they want to inspect or
 develop the code.
+
+The receiver should not open `http://localhost:8787` unless the receiver is also
+running the server. For the P0 demo, `localhost:8787` is only for the sender
+laptop. The receiver uses the sender's IP address with the same port, such as
+`http://10.1.60.244:8787`.
 
 ## Demo Run
 
@@ -152,6 +161,15 @@ connect to the sender unless both users intentionally modify the app to use a
 shared signaling server.
 
 ## Troubleshooting
+
+Live logs are written on the sender laptop to:
+
+```text
+logs/live-events.jsonl
+```
+
+That file records client actions, peer states, signaling posts/polls, STT
+events, sent frames, received frames, and errors.
 
 | Symptom | Fix |
 |---|---|

@@ -14,6 +14,8 @@ const frameTypes = {
   deviceDead: 2,
 };
 
+const clientId = crypto.randomUUID();
+
 const state = {
   peer: null,
   stt: null,
@@ -56,12 +58,24 @@ async function checkServer() {
 }
 
 function bindControls() {
-  ui.roleSelect.addEventListener("change", updateRole);
-  ui.bandwidthInput.addEventListener("input", updateLinkLabels);
-  ui.jitterInput.addEventListener("input", updateLinkLabels);
+  ui.roleSelect.addEventListener("change", () => {
+    updateRole();
+    logClient("role_change", { role: ui.roleSelect.value });
+  });
+  ui.bandwidthInput.addEventListener("input", () => {
+    updateLinkLabels();
+    logClient("bandwidth_change", { kbps: ui.bandwidthInput.value });
+  });
+  ui.jitterInput.addEventListener("input", () => {
+    updateLinkLabels();
+    logClient("jitter_change", { ms: ui.jitterInput.value });
+  });
   ui.connectPeer.addEventListener("click", connectPeer);
   ui.connectStt.addEventListener("click", connectStt);
-  ui.sendTranscript.addEventListener("click", () => processTranscript(ui.manualTranscript.value));
+  ui.sendTranscript.addEventListener("click", () => {
+    logClient("manual_send_click", { bytes: ui.manualTranscript.value.length });
+    processTranscript(ui.manualTranscript.value);
+  });
   ui.killSwitch.addEventListener("click", sendKillSwitch);
   ui.speakLast.addEventListener("click", () => speak(state.lastSummary));
   ui.talkButton.addEventListener("pointerdown", startTalk);
@@ -70,6 +84,7 @@ function bindControls() {
   document.querySelectorAll("[data-sample]").forEach((button) => {
     button.addEventListener("click", () => {
       ui.manualTranscript.value = samples[button.dataset.sample];
+      logClient("sample_click", { sample: button.dataset.sample });
       processTranscript(ui.manualTranscript.value);
     });
   });
@@ -102,6 +117,7 @@ async function connectPeer() {
   });
   updateLinkLabels();
   wirePeer(state.peer);
+  logClient("connect_peer_click", { role: ui.roleSelect.value, room: ui.roomInput.value.trim() || "default" });
   ui.peerStatus.textContent = "Peer: connecting";
   try {
     await state.peer.connect();
@@ -124,6 +140,7 @@ function wirePeer(peer) {
     addEvent(`Sent ${detail.bytes} bytes`);
   });
   peer.addEventListener("message", ({ detail }) => {
+    logClient("peer_message", { bytes: detail.bytes.length });
     receiveFrame(detail.bytes, detail.receivedAt);
   });
   peer.addEventListener("closed", () => {
@@ -147,6 +164,7 @@ async function connectStt() {
   state.stt?.close();
   state.stt = new OfflineWhisperTranscriber();
   wireStt(state.stt);
+  logClient("connect_stt_click", {});
   ui.sttStatus.textContent = "STT: opening mic";
   try {
     await state.stt.connect();
@@ -186,6 +204,7 @@ function wireStt(stt) {
 }
 
 function startTalk() {
+  logClient("talk_start", {});
   if (!state.stt) {
     addEvent("Connect Offline STT before push-to-talk");
     return;
@@ -202,6 +221,7 @@ function startTalk() {
 }
 
 async function stopTalk() {
+  logClient("talk_stop", {});
   ui.talkButton.classList.remove("recording");
   ui.talkButton.textContent = "Hold to Talk";
   try {
@@ -221,6 +241,7 @@ async function processTranscript(transcript) {
   state.lastMetadata = metadata;
   ui.transcriptView.textContent = clean;
   ui.metadataView.textContent = JSON.stringify({ validation, metadata }, null, 2);
+  logClient("metadata_extracted", { report_type: metadata.report_type, valid: validation.ok });
   addEvent("Mission metadata extracted");
   await sendMetadata(metadata);
 }
@@ -239,6 +260,7 @@ async function sendMetadata(metadata) {
   const bytes = encodeFrame(frame);
   ui.binaryView.textContent = `${bytes.length} bytes\n${toHex(bytes)}`;
   renderMetrics({ bytes: bytes.length, metadata });
+  logClient("metadata_frame_built", { bytes: bytes.length, sequence: state.sequence });
   await transmitFrame(bytes, metadata);
 }
 
@@ -262,6 +284,7 @@ async function sendKillSwitch() {
   ui.metadataView.textContent = JSON.stringify({ control: "device_dead", payload }, null, 2);
   ui.binaryView.textContent = `${bytes.length} bytes\n${toHex(bytes)}`;
   renderMetrics({ bytes: bytes.length });
+  logClient("kill_switch_built", { bytes: bytes.length, sequence: state.sequence });
   addEvent("Kill switch control frame built");
   await transmitFrame(bytes, payload);
 }
@@ -312,6 +335,22 @@ function receiveKillSwitchFrame(frame, bytes, receivedAt) {
   renderMetrics({ bytes: bytes.length, receivedAt });
 }
 
+function logClient(event, detail = {}) {
+  const body = {
+    event,
+    detail,
+    client_id: clientId,
+    role: ui.roleSelect?.value ?? "unknown",
+    room: ui.roomInput?.value ?? "",
+    peer_status: ui.peerStatus?.textContent ?? "",
+  };
+  fetch("/api/client-log", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => {});
+}
+
 function speak(text) {
   if (!text || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
@@ -343,6 +382,7 @@ function metric(label, value, note) {
 }
 
 function addEvent(text) {
+  logClient("timeline", { text });
   state.events.unshift({ text, at: new Date().toLocaleTimeString() });
   state.events = state.events.slice(0, 8);
   ui.timelineView.innerHTML = state.events

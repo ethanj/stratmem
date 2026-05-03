@@ -8,14 +8,17 @@
  */
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = join(rootDir, "public");
+const logDir = join(rootDir, "..", "logs");
+const liveLogPath = join(logDir, "live-events.jsonl");
 const port = Number.parseInt(process.env.PORT ?? "8787", 10);
+const bindHost = "0.0.0.0";
 const rooms = new Map();
 const maxJsonBytes = 64 * 1024;
 const maxSdpBytes = 1024 * 1024;
@@ -87,12 +90,19 @@ function getRoom(roomId) {
   return rooms.get(key);
 }
 
+async function writeLiveLog(event) {
+  await mkdir(logDir, { recursive: true });
+  const line = JSON.stringify({ at: new Date().toISOString(), ...event });
+  await appendFile(liveLogPath, `${line}\n`);
+}
+
 async function handleSignal(req, res, url) {
   const roomId = url.searchParams.get("room") ?? "default";
   const room = getRoom(roomId);
 
   if (req.method === "DELETE") {
     room.messages = [];
+    await writeLiveLog({ source: "server", event: "signal_reset", room: roomId });
     jsonResponse(res, 200, { ok: true });
     return;
   }
@@ -112,13 +122,26 @@ async function handleSignal(req, res, url) {
     if (room.messages.length > 200) {
       room.messages.splice(0, room.messages.length - 200);
     }
+    await writeLiveLog({
+      source: "server",
+      event: "signal_post",
+      room: roomId,
+      signal_id: entry.id,
+      sender_id: entry.sender_id,
+      session_id: entry.session_id,
+      kind: entry.kind,
+    });
     jsonResponse(res, 200, { ok: true, id: entry.id });
     return;
   }
 
   if (req.method === "GET") {
     const since = Number.parseInt(url.searchParams.get("since") ?? "0", 10);
-    jsonResponse(res, 200, { messages: room.messages.filter((entry) => entry.id > since) });
+    const messages = room.messages.filter((entry) => entry.id > since);
+    if (messages.length > 0) {
+      await writeLiveLog({ source: "server", event: "signal_poll", room: roomId, since, count: messages.length });
+    }
+    jsonResponse(res, 200, { messages });
     return;
   }
 
@@ -169,6 +192,16 @@ async function handleRealtimeSdp(req, res) {
   textResponse(res, 200, body, "application/sdp");
 }
 
+async function handleClientLog(req, res) {
+  if (req.method !== "POST") {
+    jsonResponse(res, 405, { error: "method_not_allowed" });
+    return;
+  }
+  const entry = await readJson(req);
+  await writeLiveLog({ source: "client", ...entry, remote: req.socket.remoteAddress });
+  jsonResponse(res, 200, { ok: true });
+}
+
 async function handleLocalTranscribe(req, res) {
   if (req.method !== "POST") {
     jsonResponse(res, 405, { error: "method_not_allowed" });
@@ -191,7 +224,9 @@ async function handleLocalTranscribe(req, res) {
 
   try {
     await writeFile(audioPath, audioBytes);
+    await writeLiveLog({ source: "server", event: "stt_start", bytes: audioBytes.length });
     const transcript = await transcribeWithWhisper(audioPath);
+    await writeLiveLog({ source: "server", event: "stt_complete", elapsed_ms: Date.now() - startedAt });
     jsonResponse(res, 200, {
       transcript,
       elapsed_ms: Date.now() - startedAt,
@@ -308,12 +343,16 @@ const server = createServer(async (req, res) => {
       await handleLocalTranscribe(req, res);
       return;
     }
+    if (url.pathname === "/api/client-log") {
+      await handleClientLog(req, res);
+      return;
+    }
     if (url.pathname === "/api/openai/realtime-sdp" && req.method === "POST") {
       await handleRealtimeSdp(req, res);
       return;
     }
     if (url.pathname === "/api/health") {
-      jsonResponse(res, 200, { ok: true, stt: "local-whisper" });
+      jsonResponse(res, 200, { ok: true, stt: "local-whisper", bind: bindHost, port });
       return;
     }
     await serveStatic(req, res, url);
@@ -322,12 +361,15 @@ const server = createServer(async (req, res) => {
     if (status >= 500) {
       console.error(error);
     }
+    await writeLiveLog({ source: "server", event: "http_error", path: url.pathname, status, message: error.message });
     jsonResponse(res, status, { error: error.message || "server_error" });
   }
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`TacNet prototype running at http://localhost:${port}`);
+server.listen(port, bindHost, () => {
+  writeLiveLog({ source: "server", event: "server_start", bind: bindHost, port }).catch(console.error);
+  console.log(`TacNet prototype listening on ${bindHost}:${port}`);
+  console.log(`Sender browser: http://localhost:${port}`);
   console.log(`Local STT: ${whisperBin}`);
   console.log(`Local model: ${whisperModelPath}`);
 });
