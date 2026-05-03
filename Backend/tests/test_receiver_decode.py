@@ -24,9 +24,9 @@ def test_receiver_decode_fixture_updates_s2_event_list():
 
     assert event["verified"] is True
     assert event["frame_type"] == "metadata"
-    assert event["metadata"]["report_type"] == "salute"
-    assert event["metadata"]["speaker"] == "Bravo One"
-    assert "Bravo One at grid 22334455" in event["reconstructed_text"]
+    assert event["metadata"]["report_type"] == "casevac"
+    assert event["metadata"]["speaker"] == "Alpha Two"
+    assert "Alpha Two at grid 12345678" in event["reconstructed_text"]
     assert event["compression"]["binary_bytes"] == event["byte_count"]
     assert event["compression"]["ratio"] > 1
 
@@ -70,3 +70,7 @@ def test_state_includes_receiver_events_after_decode():
     state = response.json()
     assert state["receiver_events"]
     assert state["receiver_events"][0]["verified"] is True
+    entities = state["map_state"]["entities"]
+    casualty = next(entity for entity in entities if entity["id"] == "1st_squad_rifle")
+    assert casualty["status"]["health"] == "red"
+    assert casualty["report_status"] == "CASEVAC pending"

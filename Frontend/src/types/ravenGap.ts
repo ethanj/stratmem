@@ -255,6 +255,14 @@ export interface TacticalHistoryItem {
   message: string;
 }
 
+export interface TacticalTransmission {
+  time: string;
+  channel: string;
+  status: string;
+  message: string;
+  event_id?: string | null;
+}
+
 export interface TacticalEntity extends LatLon {
   id: string;
   parent_id?: string | null;
@@ -269,6 +277,12 @@ export interface TacticalEntity extends LatLon {
   status: TacticalStatus;
   history: TacticalHistoryItem[];
   role?: string;
+  activity?: string;
+  demo_role?: "nine_line_sender" | "nine_line_subject" | string;
+  report_status?: string;
+  linked_event_ids?: string[];
+  transmissions?: TacticalTransmission[];
+  detail_locked?: boolean;
   personnel_available?: number;
   personnel_total?: number;
 }

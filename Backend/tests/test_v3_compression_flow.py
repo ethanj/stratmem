@@ -5,7 +5,8 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
-VOICE_EVENT_ID = "rg_voice_001"
+VOICE_EVENT_ID = "rg_voice_009"
+VOICE_AUDIO_ID = "raven_gap_nine_line_1"
 
 
 def test_v3_compression_switch_flow():
@@ -35,7 +36,7 @@ def test_v3_compression_switch_flow():
     assert comms["budget_bytes"] == 3750
     assert comms["compression_enabled"] is False
 
-    response = client.post("/voice/report", json={"audio_id": "raven_gap_salute_1"})
+    response = client.post("/voice/report", json={"audio_id": VOICE_AUDIO_ID})
     assert response.status_code == 200
     state = response.json()
     voice_report = state["voice_report"]
@@ -51,7 +52,7 @@ def test_v3_compression_switch_flow():
     state = response.json()
     assert state["comms"]["compression_enabled"] is True
 
-    response = client.post("/voice/report", json={"audio_id": "raven_gap_salute_1"})
+    response = client.post("/voice/report", json={"audio_id": VOICE_AUDIO_ID})
     assert response.status_code == 200
     state = response.json()
     voice_report = state["voice_report"]
@@ -61,10 +62,16 @@ def test_v3_compression_switch_flow():
     assert voice_report["mode"] == "compressed_json"
     assert voice_report["fits_budget"] is True
     assert count_voice_events(state) == 1
-    assert voice_event["type"] == "salute"
+    assert voice_event["type"] == "casevac"
     assert voice_event["metadata"]["voice_source"] is True
+    assert voice_event["metadata"]["report_type"] == "nine_line_medevac"
+    casualty = next(entity for entity in state["map_state"]["entities"] if entity["id"] == "1st_squad_rifle")
+    assert casualty["status"]["health"] == "red"
+    sender = next(entity for entity in state["map_state"]["entities"] if entity["id"] == "1st_squad_atl")
+    assert sender["demo_role"] == "nine_line_sender"
+    assert any(entity.get("detail_locked") for entity in state["map_state"]["entities"])
 
-    response = client.post("/voice/report", json={"audio_id": "raven_gap_salute_1"})
+    response = client.post("/voice/report", json={"audio_id": VOICE_AUDIO_ID})
     assert response.status_code == 200
     state = response.json()
     assert count_voice_events(state) == 1
@@ -87,7 +94,7 @@ def test_v3_compression_switch_flow():
 
 
 def voice_events(state: dict) -> list[dict]:
-    """Return all voice-derived SALUTE events in state."""
+    """Return all voice-derived 9-line events in state."""
     return [
         event
         for event in state.get("events", [])

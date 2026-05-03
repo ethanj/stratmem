@@ -9,40 +9,22 @@ from __future__ import annotations
 
 from typing import Any
 
-
-RIFLE_ROLES = [
-    ("sl", "SL", "Squad Leader"),
-    ("atl", "A TL", "Alpha Team Leader"),
-    ("ar", "A AR", "Automatic Rifleman"),
-    ("gren", "A GRN", "Grenadier"),
-    ("rifle", "A RFL", "Rifleman"),
-    ("btl", "B TL", "Bravo Team Leader"),
-    ("bar", "B AR", "Automatic Rifleman"),
-    ("bgren", "B GRN", "Grenadier"),
-    ("brifle", "B RFL", "Rifleman"),
-]
-
-SQUADS = [
-    ("1st_squad", "1ST SQUAD", "1", "SFG-UCI----C", 37.4718, -118.6821),
-    ("2nd_squad", "2ND SQUAD", "2", "SFG-UCI----C", 37.4787, -118.6749),
-    ("3rd_squad", "3RD SQUAD", "3", "SFG-UCI----C", 37.4669, -118.6775),
-    ("weapons_squad", "WEAPONS SQD", "WPN", "SFG-UCWM---C", 37.4762, -118.6858),
-]
-
-WEAPONS_ROLES = [
-    ("wsl", "WSL", "Weapons Squad Leader"),
-    ("mg1", "MG1", "Machine Gunner"),
-    ("ag1", "AG1", "Assistant Gunner"),
-    ("mg2", "MG2", "Machine Gunner"),
-    ("ag2", "AG2", "Assistant Gunner"),
-    ("javelin", "JAV", "Antiarmor Gunner"),
-]
-
-ASSETS = [
-    ("jltv_v1", "JLTV-1", "V1", "vehicle", "SFG-EVA----", 37.4685, -118.6886),
-    ("rq_11", "RQ-11 RAVEN", "RQ-11", "drone", "SFG-UCVU---", 37.4729, -118.6798),
-    ("sensor_s7", "OP/LP SENSOR 7", "S7", "sensor", "SFG-UCR----", 37.4796, -118.6715),
-]
+from app.core.map_demo import (
+    ASSETS,
+    NINE_LINE_SENDER_ID,
+    NINE_LINE_SUBJECT_ID,
+    RIFLE_ROLES,
+    SISTER_PLATOONS,
+    SQUADS,
+    WEAPONS_ROLES,
+    DemoReadiness,
+    build_demo_readiness,
+    platoon_activity,
+    platoon_status,
+    soldier_extra,
+    soldier_history,
+    squad_activity,
+)
 
 
 def build_map_entities(
@@ -51,13 +33,16 @@ def build_map_entities(
 ) -> list[dict[str, Any]]:
     """Build the full tactical entity list used by the S2 map."""
     latest = latest_events_by_sender(events)
+    demo = build_demo_readiness(events)
     contact_entities = [contact_entity(contact) for contact in contacts]
-    squads = [squad_entity(spec, latest) for spec in SQUADS]
-    personnel = [soldier for spec in SQUADS for soldier in squad_soldiers(spec, latest)]
+    squads = [squad_entity(spec, latest, demo) for spec in SQUADS]
+    personnel = [soldier for spec in SQUADS for soldier in squad_soldiers(spec, latest, demo)]
     assets = [asset_entity(spec, latest) for spec in ASSETS]
+    sister_platoons = [mock_platoon_entity(spec) for spec in SISTER_PLATOONS]
 
     return [
-        platoon_entity(latest),
+        platoon_entity(latest, demo),
+        *sister_platoons,
         *squads,
         *personnel,
         *assets,
@@ -65,9 +50,13 @@ def build_map_entities(
     ]
 
 
-def platoon_entity(latest: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def platoon_entity(
+    latest: dict[str, dict[str, Any]],
+    demo: DemoReadiness,
+) -> dict[str, Any]:
     """Return the platoon command entity."""
     report = latest.get("PL")
+    personnel_available = 35 if demo.casevac_active else 36
     return base_entity(
         entity_id="plt-raven",
         parent_id=None,
@@ -77,19 +66,25 @@ def platoon_entity(latest: dict[str, dict[str, Any]]) -> dict[str, Any]:
         sidc="SFG-UCI----D",
         lat=location_value(report, "lat", 37.4755),
         lon=location_value(report, "lon", -118.6818),
-        status=status("green", "green", "green", "green", "green"),
+        status=platoon_status(demo),
         history=history_for("PL", latest),
-        extra={"echelon": "platoon", "personnel_available": 36, "personnel_total": 36},
+        extra={
+            "echelon": "platoon",
+            "activity": platoon_activity(demo),
+            "personnel_available": personnel_available,
+            "personnel_total": 36,
+        },
     )
 
 
 def squad_entity(
     spec: tuple[str, str, str, str, float, float],
     latest: dict[str, dict[str, Any]],
+    demo: DemoReadiness,
 ) -> dict[str, Any]:
     """Return one aggregate squad entity."""
     squad_id, label, callsign, sidc, lat, lon = spec
-    members = squad_soldiers(spec, latest)
+    members = squad_soldiers(spec, latest, demo)
     readiness = aggregate_readiness([member["status"] for member in members])
     report = latest.get(squad_sender_id(squad_id))
 
@@ -106,6 +101,7 @@ def squad_entity(
         history=history_for(squad_sender_id(squad_id), latest),
         extra={
             "echelon": "squad",
+            "activity": squad_activity(squad_id, demo),
             "personnel_available": available_count(members),
             "personnel_total": len(members),
         },
@@ -115,12 +111,13 @@ def squad_entity(
 def squad_soldiers(
     spec: tuple[str, str, str, str, float, float],
     latest: dict[str, dict[str, Any]],
+    demo: DemoReadiness,
 ) -> list[dict[str, Any]]:
     """Return individual soldiers under one squad."""
     squad_id, _, callsign, _, lat, lon = spec
     roles = WEAPONS_ROLES if squad_id == "weapons_squad" else RIFLE_ROLES
     return [
-        soldier_entity(squad_id, callsign, role, index, lat, lon, latest)
+        soldier_entity(squad_id, callsign, role, index, lat, lon, latest, demo)
         for index, role in enumerate(roles)
     ]
 
@@ -133,12 +130,14 @@ def soldier_entity(
     lat: float,
     lon: float,
     latest: dict[str, dict[str, Any]],
+    demo: DemoReadiness,
 ) -> dict[str, Any]:
     """Return one synthetic soldier status object for demo inspection."""
     role_id, role_label, role_name = role
     entity_id = f"{squad_id}_{role_id}"
     display = f"{squad_callsign}-{role_label}"
-    override = soldier_status_override(entity_id)
+    override = soldier_status_override(entity_id, demo)
+    fallback_history = history_for(squad_sender_id(squad_id), latest)
 
     return base_entity(
         entity_id=entity_id,
@@ -147,11 +146,29 @@ def soldier_entity(
         callsign=display,
         entity_type="personnel",
         sidc="SFG-UCI----A",
-        lat=lat + offset(index, 0.00018),
-        lon=lon + offset(index + 2, 0.00021),
+        lat=lat + personnel_lat_offset(index),
+        lon=lon + personnel_lon_offset(index),
         status=override or status("green", "green", "green", "green", "green"),
-        history=history_for(squad_sender_id(squad_id), latest),
-        extra={"role": role_name, "echelon": "individual"},
+        history=soldier_history(entity_id, fallback_history, demo),
+        extra=soldier_extra(entity_id, role_id, role_name, demo),
+    )
+
+
+def mock_platoon_entity(spec: tuple[str, str, str, float, float]) -> dict[str, Any]:
+    """Return an adjacent platoon symbol without drilldown details."""
+    entity_id, label, callsign, lat, lon = spec
+    return base_entity(
+        entity_id=entity_id,
+        parent_id=None,
+        label=label,
+        callsign=callsign,
+        entity_type="platoon",
+        sidc="SFG-UCI----D",
+        lat=lat,
+        lon=lon,
+        status=status("unknown", "unknown", "unknown", "unknown", "unknown"),
+        history=[history_item(None, "Adjacent platoon shown for context only.")],
+        extra={"echelon": "platoon", "detail_locked": True},
     )
 
 
@@ -294,10 +311,17 @@ def available_count(members: list[dict[str, Any]]) -> int:
     return sum(1 for member in members if member["status"].get("health") != "red")
 
 
-def soldier_status_override(entity_id: str) -> dict[str, str] | None:
+def soldier_status_override(
+    entity_id: str,
+    demo: DemoReadiness,
+) -> dict[str, str] | None:
     """Return scripted individual status overrides for the demo."""
+    if entity_id == NINE_LINE_SENDER_ID and demo.casevac_active:
+        return status("green", "amber", "green", "amber", "green")
+    if entity_id == NINE_LINE_SUBJECT_ID and demo.casevac_active:
+        return status("red", "red", "green", "green", "red")
+
     overrides = {
-        "1st_squad_rifle": status("amber", "amber", "amber", "green", "amber"),
         "1st_squad_btl": status("green", "amber", "amber", "amber", "green"),
         "2nd_squad_atl": status("green", "green", "green", "amber", "green"),
         "weapons_squad_mg1": status("green", "amber", "amber", "green", "green"),
@@ -322,9 +346,16 @@ def location_value(event: dict[str, Any] | None, key: str, fallback: float) -> f
     return float(location.get(key, fallback))
 
 
-def offset(index: int, amount: float) -> float:
-    """Return deterministic map offset for individual soldiers."""
-    return ((index % 3) - 1) * amount
+def personnel_lat_offset(index: int) -> float:
+    """Return deterministic individual-soldier latitude spread."""
+    offsets = [-0.00042, -0.00028, -0.00014, 0.0, 0.00014, 0.00028, 0.00042, 0.00008, -0.00008]
+    return offsets[index % len(offsets)]
+
+
+def personnel_lon_offset(index: int) -> float:
+    """Return deterministic individual-soldier longitude spread."""
+    offsets = [-0.00036, -0.00018, 0.00002, 0.00024, 0.00044, -0.00046, -0.00024, 0.00056, -0.00058]
+    return offsets[index % len(offsets)]
 
 
 def squad_sender_id(squad_id: str) -> str:

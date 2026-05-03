@@ -3,7 +3,7 @@ import { buildDegradedComms, ravenGapCommsFull } from "./ravenGapStub";
 import type { ReceiverDecodeEvent } from "../types/ravenGap";
 
 const BASE_URL = "http://localhost:8000";
-const DEFAULT_VOICE_AUDIO_ID = "raven_gap_salute_1";
+const DEFAULT_VOICE_AUDIO_ID = "raven_gap_nine_line_1";
 
 export async function getScenarios() {
   const res = await fetch(`${BASE_URL}/scenarios`);
@@ -80,8 +80,8 @@ export async function resetSimulation() {
 }
 
 export async function analyzeIncident(payload: {
-  correlation: any;
-  incident: any;
+  correlation: unknown;
+  incident: unknown;
 }) {
   const res = await fetch(`${BASE_URL}/agent/analyze`, {
     method: "POST",

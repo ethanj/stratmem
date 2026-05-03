@@ -21,6 +21,8 @@ from app.api.routes.receiver import (
     reset_receiver_events,
     router as receiver_router,
 )
+from app.core.map import build_map_state
+from app.core.map_demo import state_with_receiver_impact
 from app.core.pipeline import run_pipeline
 from app.core.scenario import (
     DEFAULT_SCENARIO_ID,
@@ -126,6 +128,7 @@ def select_scenario(payload: ScenarioSelectRequest):
     state = store.reset(scenario=current_scenario())
     state["meta"]["status"] = "idle"
     state["meta"]["mode"] = "demo"
+    state = state_with_map_entities(state)
 
     return store.replace(state)
 
@@ -186,10 +189,11 @@ def step_simulation():
 
 @app.get("/state")
 def get_state():
-    state = store.get()
+    state = state_with_map_entities(store.get())
     state["scenario"] = current_scenario()
-    state["receiver_events"] = get_receiver_events()
-    return state
+    receiver_events = get_receiver_events()
+    state["receiver_events"] = receiver_events
+    return state_with_receiver_impact(state, receiver_events)
 
 
 @app.post("/comms/degrade")
@@ -213,7 +217,7 @@ def voice_report(payload: VoiceReportRequest):
     state = store.get()
 
     if not state.get("comms", {}).get("compression_enabled"):
-        return block_raw_voice_report(state)
+        return block_raw_voice_report(payload.audio_id, state)
 
     return process_compressed_voice_report(payload.audio_id, state)
 
@@ -222,7 +226,24 @@ def voice_report(payload: VoiceReportRequest):
 def reset():
     reset_adapter()
     reset_receiver_events()
-    return store.reset(scenario=current_scenario())
+    state = store.reset(scenario=current_scenario())
+    return store.replace(state_with_map_entities(state))
+
+
+def state_with_map_entities(state: dict) -> dict:
+    """Ensure idle/reset states still carry the drillable Raven Gap map."""
+    if state.get("map_state", {}).get("entities"):
+        return state
+
+    return {
+        **state,
+        "map_state": build_map_state(
+            state.get("events", []),
+            signals=state.get("signals"),
+            compactions=state.get("compactions"),
+            comms=state.get("comms"),
+        ),
+    }
 
 
 def validate_voice_audio(audio_id: str) -> None:
@@ -232,14 +253,15 @@ def validate_voice_audio(audio_id: str) -> None:
         raise HTTPException(status_code=404, detail="Voice fixture not found") from exc
 
 
-def block_raw_voice_report(state: dict) -> dict:
-    base_report = build_voice_report()
+def block_raw_voice_report(audio_id: str, state: dict) -> dict:
+    base_report = build_voice_report(audio_id=audio_id)
     state["voice_report"] = build_voice_report(
         status="blocked_raw",
         mode="raw_audio",
         transmit_bytes=base_report["audio_estimated_bytes"],
         fits_budget=False,
         blocked_reason="raw audio exceeds 3 Kbps / 10 sec budget",
+        audio_id=audio_id,
     )
     state["scenario"] = current_scenario()
     return store.replace(state)
@@ -247,12 +269,13 @@ def block_raw_voice_report(state: dict) -> dict:
 
 def process_compressed_voice_report(audio_id: str, state: dict) -> dict:
     event_payload = voice_event_payload(audio_id)
-    base_report = build_voice_report()
+    base_report = build_voice_report(audio_id=audio_id)
     state["voice_report"] = build_voice_report(
         status="processed",
         mode="compressed_json",
         transmit_bytes=base_report["json_bytes"],
         fits_budget=True,
+        audio_id=audio_id,
     )
     state["events"] = upsert_event(state.get("events", []), event_payload)
     state = store.replace(state)

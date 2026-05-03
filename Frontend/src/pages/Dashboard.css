@@ -1,4 +1,4 @@
-/* Dashboard.css — Grid layout, panel areas */
+/* Dashboard.css — Map-first S2 layout with collapsible overlays */
 
 .dashboard-shell {
   height: 100vh;
@@ -11,12 +11,8 @@
 .dashboard-grid.raven-gap {
   flex: 1;
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
-  grid-template-rows: 100px 1fr 240px;
-  grid-template-areas:
-    "mesh   mesh     mesh"
-    "feed   map      sitrep"
-    "signals timeline aside";
+  grid-template-columns: minmax(0, 2fr) minmax(330px, 0.72fr);
+  grid-template-areas: "map readiness";
   gap: 4px;
   padding: 4px;
   overflow: hidden;
@@ -30,57 +26,162 @@
   flex-direction: column;
 }
 
-.mesh-area { grid-area: mesh; }
-.feed-area { grid-area: feed; }
 .map-area { grid-area: map; }
-.sitrep-area {
-  grid-area: sitrep;
-  gap: 4px;
-  overflow-y: auto;
+.readiness-area {
+  grid-area: readiness;
+  background: rgba(8, 12, 8, 0.96);
+  border: 1px solid var(--border);
 }
-.signals-area { grid-area: signals; }
-.timeline-area { grid-area: timeline; }
-.aside-area { grid-area: aside; }
 
-.aside-stack {
-  width: 100%;
-  height: 100%;
+.map-area {
+  position: relative;
+}
+
+.overlay-tabs {
+  position: absolute;
+  top: 48px;
+  left: 10px;
+  z-index: 12;
+  display: grid;
+  gap: 4px;
+  width: 98px;
+  padding: 5px;
+  border: 1px solid rgba(42, 58, 42, 0.76);
+  border-radius: 3px;
+  background: rgba(8, 12, 8, 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.overlay-tabs button {
+  min-height: 24px;
+  border: 1px solid rgba(42, 58, 42, 0.8);
+  border-radius: 2px;
+  color: var(--muted);
+  background: rgba(13, 18, 13, 0.76);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: left;
+}
+
+.overlay-tabs button.active,
+.overlay-tabs button:hover {
+  color: var(--text-bright);
+  border-color: var(--border-bright);
+  background: rgba(51, 136, 187, 0.18);
+}
+
+.overlay-panel {
+  position: absolute;
+  top: 48px;
+  left: 116px;
+  bottom: 12px;
+  z-index: 13;
+  width: min(540px, calc(100% - 138px));
+  display: grid;
+  grid-template-rows: 34px minmax(0, 1fr);
+  border: 1px solid rgba(74, 122, 80, 0.56);
+  border-radius: 3px;
+  background: rgba(8, 12, 8, 0.94);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(9px);
+}
+
+.overlay-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.overlay-panel header strong {
+  color: var(--label);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.overlay-panel header button {
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--muted);
+  background: rgba(13, 18, 13, 0.9);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.overlay-panel-body {
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(132px, 0.75fr) minmax(162px, 1fr) minmax(108px, 0.62fr);
   gap: 4px;
+  padding: 4px;
+  overflow: auto;
+}
+
+.overlay-panel-body > .panel {
+  min-height: 0;
+}
+
+.readiness-empty {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.readiness-empty span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.readiness-empty strong {
+  color: var(--text-bright);
+  font-size: 22px;
+  letter-spacing: 0.05em;
+}
+
+.readiness-empty p {
+  max-width: 250px;
+  color: var(--label);
+  font-size: 12px;
 }
 
 /* Responsive */
 @media (max-width: 980px) {
   .dashboard-grid.raven-gap {
-    grid-template-columns: 240px 1fr 240px;
-    grid-template-rows: 80px 1fr 220px;
+    grid-template-columns: minmax(0, 1fr) 320px;
   }
 }
 
 @media (max-width: 760px) {
   .dashboard-grid.raven-gap {
     grid-template-columns: 1fr;
-    grid-template-rows: auto;
     grid-template-areas:
-      "mesh"
       "map"
-      "sitrep"
-      "feed"
-      "signals"
-      "timeline"
-      "aside";
+      "readiness";
     overflow-y: auto;
   }
 
   .dashboard-area {
-    min-height: 200px;
+    min-height: 360px;
   }
 
-  .aside-stack {
-    height: auto;
-    grid-template-rows: auto;
+  .readiness-area {
+    min-height: 420px;
+  }
+
+  .overlay-panel {
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+
+  .overlay-tabs {
+    width: min(96px, 28vw);
   }
 }

@@ -6,19 +6,35 @@
  * entity symbol.
  */
 import type { TacticalEntity } from "../../types/ravenGap";
+import "./TacticalEntityDrawer.css";
 
 type Props = {
-  entity?: TacticalEntity;
+  entity?: TacticalEntity | null;
+  roster?: TacticalEntity[];
+  rosterExpanded?: boolean;
+  parentLabel?: string;
+  onBack?: () => void;
   onClose: () => void;
   onExpandParent: (entity: TacticalEntity) => void;
+  onSelectEntity?: (id: string) => void;
 };
 
 const STATUS_FIELDS = ["health", "readiness", "ammo", "comms", "mobility", "battery", "fuel"];
 
-export default function TacticalEntityDrawer({ entity, onClose, onExpandParent }: Props) {
+export default function TacticalEntityDrawer({
+  entity,
+  roster = [],
+  rosterExpanded = false,
+  parentLabel,
+  onBack,
+  onClose,
+  onExpandParent,
+  onSelectEntity,
+}: Props) {
   if (!entity) return null;
 
   const canExpand = entity.entity_type === "squad" || entity.entity_type === "platoon";
+  const isLocked = Boolean(entity.detail_locked);
 
   return (
     <aside className="entity-drawer" aria-label="Selected tactical entity">
@@ -27,8 +43,21 @@ export default function TacticalEntityDrawer({ entity, onClose, onExpandParent }
           <span className={`entity-affiliation ${entity.affiliation}`}>{entity.affiliation}</span>
           <h3>{entity.label}</h3>
         </div>
-        <button type="button" onClick={onClose}>CLOSE</button>
+        <div className="entity-header-actions">
+          {onBack && (
+            <button type="button" onClick={onBack}>
+              BACK{parentLabel ? ` TO ${parentLabel}` : ""}
+            </button>
+          )}
+          <button type="button" onClick={onClose}>CLEAR</button>
+        </div>
       </div>
+
+      {isLocked && (
+        <div className="entity-locked">
+          SYMBOL ONLY. Adjacent unit context; no roster is loaded for this demo.
+        </div>
+      )}
 
       <div className="entity-drawer-grid">
         <Fact label="CALLSIGN" value={entity.callsign} />
@@ -39,11 +68,26 @@ export default function TacticalEntityDrawer({ entity, onClose, onExpandParent }
         <Fact label="SIDC" value={entity.sidc} />
       </div>
 
-      {"personnel_total" in entity && (
-        <div className="entity-readiness-bar">
-          <span>PERSONNEL</span>
-          <strong>{entity.personnel_available}/{entity.personnel_total} AVAILABLE</strong>
+      {(entity.activity || entity.report_status) && (
+        <div className="entity-drawer-grid">
+          {entity.activity && <Fact label="ACTIVITY" value={entity.activity} />}
+          {entity.report_status && <Fact label="REPORT" value={entity.report_status} />}
         </div>
+      )}
+
+      {"personnel_total" in entity && (
+        <button
+          type="button"
+          className="entity-readiness-bar"
+          onClick={() => canExpand && onExpandParent(entity)}
+          disabled={!canExpand || isLocked}
+        >
+          <span>PERSONNEL</span>
+          <strong>
+            {entity.personnel_available}/{entity.personnel_total} AVAILABLE
+            {canExpand && !isLocked ? " - VIEW SOLDIERS" : ""}
+          </strong>
+        </button>
       )}
 
       <div className="entity-status-grid">
@@ -55,10 +99,12 @@ export default function TacticalEntityDrawer({ entity, onClose, onExpandParent }
         ))}
       </div>
 
-      {canExpand && (
-        <button type="button" className="entity-expand-btn" onClick={() => onExpandParent(entity)}>
-          EXPAND PERSONNEL ON MAP
-        </button>
+      {canExpand && rosterExpanded && roster.length > 0 && (
+        <RosterList roster={roster} onSelectEntity={onSelectEntity} />
+      )}
+
+      {entity.transmissions && entity.transmissions.length > 0 && (
+        <TransmissionList transmissions={entity.transmissions} />
       )}
 
       <div className="entity-history">
@@ -74,7 +120,53 @@ export default function TacticalEntityDrawer({ entity, onClose, onExpandParent }
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function TransmissionList({
+  transmissions,
+}: {
+  transmissions: NonNullable<TacticalEntity["transmissions"]>;
+}) {
+  return (
+    <div className="entity-transmissions">
+      <h4>LIVE TRANSMISSION</h4>
+      {transmissions.map((row, index) => (
+        <div key={`${row.time}-${row.channel}-${index}`} className="entity-transmission-row">
+          <span>{row.time}</span>
+          <strong>{row.channel}</strong>
+          <em>{row.status}</em>
+          <p>{row.message}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RosterList({
+  roster,
+  onSelectEntity,
+}: {
+  roster: TacticalEntity[];
+  onSelectEntity?: (id: string) => void;
+}) {
+  return (
+    <div className="entity-roster">
+      <h4>INDIVIDUAL READINESS</h4>
+      {roster.map((child) => (
+        <button
+          type="button"
+          key={child.id}
+          className={`entity-roster-row ${statusValue(child, "readiness")}`}
+          onClick={() => onSelectEntity?.(child.id)}
+        >
+          <span>{child.callsign}</span>
+          <strong>{statusValue(child, "readiness").toUpperCase()}</strong>
+          <em>{child.activity || child.role || "assigned"}</em>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="entity-fact">
       <span>{label}</span>

@@ -1,0 +1,248 @@
+/* TacticalEntityDrawer.css — Right-rail readiness and roster details */
+
+.entity-drawer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(74, 122, 80, 0.52);
+  border-radius: 3px;
+  background: rgba(8, 12, 8, 0.94);
+  overflow: auto;
+}
+
+.entity-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.entity-header-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.entity-drawer-header h3 {
+  margin-top: 3px;
+  color: var(--text-bright);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.entity-drawer-header button {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--label);
+  background: rgba(13, 18, 13, 0.9);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+}
+
+.entity-affiliation {
+  color: var(--status-blue);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.entity-affiliation.hostile {
+  color: var(--red);
+}
+
+.entity-drawer-grid,
+.entity-status-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.entity-drawer-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.entity-status-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.entity-fact,
+.entity-status,
+.entity-readiness-bar {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(42, 58, 42, 0.75);
+  border-radius: 2px;
+  background: rgba(13, 18, 13, 0.78);
+}
+
+.entity-readiness-bar {
+  width: 100%;
+  text-align: left;
+}
+
+.entity-readiness-bar:enabled {
+  cursor: pointer;
+}
+
+.entity-readiness-bar:enabled:hover {
+  border-color: var(--border-bright);
+}
+
+.entity-fact span,
+.entity-status span,
+.entity-readiness-bar span,
+.entity-history h4 {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.entity-fact strong,
+.entity-status strong,
+.entity-readiness-bar strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-bright);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.entity-status.green strong {
+  color: var(--status-green);
+}
+
+.entity-status.amber strong {
+  color: var(--amber);
+}
+
+.entity-status.red strong {
+  color: var(--red);
+}
+
+.entity-history {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+}
+
+.entity-locked {
+  padding: 8px;
+  border: 1px solid rgba(212, 160, 23, 0.46);
+  border-radius: 2px;
+  color: var(--amber);
+  background: rgba(212, 160, 23, 0.08);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.entity-roster {
+  display: grid;
+  gap: 5px;
+}
+
+.entity-roster h4,
+.entity-transmissions h4 {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.entity-roster-row {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 58px 62px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid rgba(42, 58, 42, 0.75);
+  border-radius: 2px;
+  color: var(--text);
+  background: rgba(13, 18, 13, 0.78);
+  text-align: left;
+}
+
+.entity-roster-row strong {
+  color: var(--status-green);
+}
+
+.entity-roster-row.amber strong {
+  color: var(--amber);
+}
+
+.entity-roster-row.red strong {
+  color: var(--red);
+}
+
+.entity-roster-row em {
+  min-width: 0;
+  color: var(--label);
+  font-size: 10px;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-transmissions {
+  display: grid;
+  gap: 6px;
+}
+
+.entity-transmission-row {
+  display: grid;
+  grid-template-columns: 54px 76px 76px;
+  gap: 7px;
+  align-items: start;
+  padding: 7px;
+  border: 1px solid rgba(42, 58, 42, 0.75);
+  border-left: 2px solid var(--status-blue);
+  border-radius: 2px;
+  background: rgba(13, 18, 13, 0.72);
+}
+
+.entity-transmission-row span,
+.entity-transmission-row em {
+  color: var(--label);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.entity-transmission-row strong {
+  color: var(--text-bright);
+  font-size: 10px;
+}
+
+.entity-transmission-row p {
+  grid-column: 1 / -1;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.entity-history-item {
+  padding: 7px;
+  border-left: 2px solid var(--border-bright);
+  background: rgba(13, 18, 13, 0.66);
+}
+
+.entity-history-item span {
+  color: var(--label);
+  font-size: 9px;
+}
+
+.entity-history-item p {
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.35;
+}

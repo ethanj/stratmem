@@ -3,69 +3,50 @@
  *
  * Renders a clean, map-first tactical view. Default view shows aggregate
  * platoon/squad/asset symbols; soldiers stay hidden until zoom or squad
- * expansion. Selecting any symbol opens a detail drawer with status and history.
+ * expansion. Selecting a symbol notifies the dashboard readiness rail.
  */
 import { type MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import type { Feature, FeatureCollection, LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapView.css";
-import type {
-  LatLon,
-  MapState,
-  NamedAreaOfInterest,
-  PhaseLine,
-  RiskZone,
-  Route,
-  TacticalEntity,
-} from "../types/ravenGap";
-import TacticalEntityDrawer from "./map/TacticalEntityDrawer";
+import type { MapState, TacticalEntity } from "../types/ravenGap";
+import {
+  BASELINE_ENTITIES,
+  DARK_RASTER_STYLE,
+  STATIC_VECTOR_STYLE,
+  computeCenter,
+  ensureLayer,
+  ensureLine,
+  handleMapError,
+  lineCollection,
+  naiCollection,
+  normalizeMap,
+  riskCollection,
+  routeCollection,
+  setSourceData,
+} from "./map/mapGeometry";
 import { markerStatus, markerTone, symbolSvgForEntity } from "./map/militarySymbols";
 
 const DEFAULT_ZOOM = 13.4;
-const SOLDIER_ZOOM = 14.6;
-const STATIC_VECTOR_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [{ id: "background", type: "background", paint: { "background-color": "#07100b" } }],
-};
+const SOLDIER_ZOOM = 15.15;
 
-const DARK_RASTER_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    topo: {
-      type: "raster",
-      tiles: [
-        "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
-        "https://b.tile.opentopomap.org/{z}/{x}/{y}.png",
-        "https://c.tile.opentopomap.org/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      attribution: "&copy; OpenTopoMap",
-    },
-  },
-  layers: [{ id: "topo-layer", type: "raster", source: "topo", minzoom: 0, maxzoom: 17 }],
+type MapViewProps = {
+  map?: MapState | null;
+  selectedEntityId?: string | null;
+  expandedEntityIds?: string[];
+  onSelectEntity?: (id: string) => void;
 };
-
-type MapViewProps = { map?: MapState | null; };
 type LayerKey = "units" | "personnel" | "assets" | "contacts" | "controls";
 
-const BASELINE_ENTITIES: TacticalEntity[] = [
-  entity("plt-raven", "PL RAVEN", "PL", "platoon", "SFG-UCI----D", 37.4755, -118.6818),
-  entity("1st_squad", "1ST SQUAD", "1", "squad", "SFG-UCI----C", 37.4718, -118.6821),
-  entity("2nd_squad", "2ND SQUAD", "2", "squad", "SFG-UCI----C", 37.4787, -118.6749),
-  entity("3rd_squad", "3RD SQUAD", "3", "squad", "SFG-UCI----C", 37.4669, -118.6775),
-  entity("weapons_squad", "WEAPONS SQD", "WPN", "squad", "SFG-UCWM---C", 37.4762, -118.6858),
-  entity("jltv_v1", "JLTV-1", "V1", "vehicle", "SFG-EVA----", 37.4685, -118.6886),
-  entity("rq_11", "RQ-11 RAVEN", "RQ-11", "drone", "SFG-UCVU---", 37.4729, -118.6798),
-  entity("sensor_s7", "OP/LP SENSOR 7", "S7", "sensor", "SFG-UCR----", 37.4796, -118.6715),
-];
-
-export default function MapView({ map }: MapViewProps) {
+export default function MapView({
+  map,
+  selectedEntityId = null,
+  expandedEntityIds = [],
+  onSelectEntity,
+}: MapViewProps) {
   const [staticMode, setStaticMode] = useState(false);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [layerTrayOpen, setLayerTrayOpen] = useState(false);
   const [layers, setLayers] = useState<Record<LayerKey, boolean>>({
     units: true,
     personnel: true,
@@ -76,11 +57,12 @@ export default function MapView({ map }: MapViewProps) {
 
   const displayMap = useMemo(() => normalizeMap(map), [map]);
   const entities = useMemo(() => displayMap.entities || BASELINE_ENTITIES, [displayMap]);
+  const expandedIds = useMemo(() => new Set(expandedEntityIds), [expandedEntityIds]);
   const visibleEntities = useMemo(
-    () => filterEntities(entities, layers, expandedIds, zoom),
-    [entities, layers, expandedIds, zoom],
+    () => filterEntities(entities, layers, expandedIds, zoom, selectedEntityId),
+    [entities, layers, expandedIds, zoom, selectedEntityId],
   );
-  const selected = entities.find((item) => item.id === selectedId);
+  const handleSelect = onSelectEntity || (() => undefined);
 
   return (
     <div className={`panel map-panel risk-${String(displayMap.risk_level || "normal")}`}>
@@ -98,17 +80,20 @@ export default function MapView({ map }: MapViewProps) {
         <MapCanvas
           map={displayMap}
           entities={visibleEntities}
+          selectedEntityId={selectedEntityId}
           controlsVisible={layers.controls}
           staticMode={staticMode}
-          onSelect={setSelectedId}
+          onSelect={handleSelect}
           onZoom={setZoom}
           onTilesFailed={() => setStaticMode(true)}
         />
-        <MapChrome entities={entities} visibleEntities={visibleEntities} layers={layers} onToggle={setLayers} />
-        <TacticalEntityDrawer
-          entity={selected}
-          onClose={() => setSelectedId(null)}
-          onExpandParent={(entity) => setExpandedIds((current) => new Set([...current, entity.id]))}
+        <MapChrome
+          entities={entities}
+          visibleEntities={visibleEntities}
+          layers={layers}
+          trayOpen={layerTrayOpen}
+          onToggle={setLayers}
+          onTrayToggle={() => setLayerTrayOpen((value) => !value)}
         />
       </div>
     </div>
@@ -118,6 +103,7 @@ export default function MapView({ map }: MapViewProps) {
 type CanvasProps = {
   map: MapState;
   entities: TacticalEntity[];
+  selectedEntityId?: string | null;
   controlsVisible: boolean;
   staticMode: boolean;
   onSelect: (id: string) => void;
@@ -175,25 +161,26 @@ function updateMap(
 ) {
   if (!instance || !instance.isStyleLoaded()) return;
   updateControlLayers(instance, props.map, props.controlsVisible);
-  syncMarkers(instance, markerRefs, props.entities, props.onSelect);
+  syncMarkers(instance, markerRefs, props.entities, props.selectedEntityId, props.onSelect);
 }
 
 function updateControlLayers(instance: maplibregl.Map, map: MapState, visible: boolean) {
-  setSourceData(instance, "nai-polygons", naiCollection(visible ? map.nais : []), "fill");
-  setSourceData(instance, "phase-lines", lineCollection(visible ? map.phase_line : []), "line");
-  setSourceData(instance, "routes", routeCollection(visible ? map.routes : []), "line");
-  setSourceData(instance, "risk-zones", riskCollection(map.risk_zones), "fill");
-  ensureLayer(instance, "nai-fill", "nai-polygons", "fill", "#1f9d7a", 0.09);
+  setSourceData(instance, "nai-polygons", naiCollection(visible ? map.nais : []));
+  setSourceData(instance, "phase-lines", lineCollection(visible ? map.phase_line : []));
+  setSourceData(instance, "routes", routeCollection(visible ? map.routes : []));
+  setSourceData(instance, "risk-zones", riskCollection(map.risk_zones));
+  ensureLayer(instance, "nai-fill", "nai-polygons", "#1f9d7a", 0.09);
   ensureLine(instance, "nai-line", "nai-polygons", "#4ade80", 1.2, [2, 2]);
   ensureLine(instance, "phase-line", "phase-lines", "#fbbf24", 2, [3, 2]);
   ensureLine(instance, "route-line", "routes", "#38bdf8", 2, [4, 2]);
-  ensureLayer(instance, "risk-fill", "risk-zones", "fill", "#ef4444", 0.13);
+  ensureLayer(instance, "risk-fill", "risk-zones", "#ef4444", 0.13);
 }
 
 function syncMarkers(
   instance: maplibregl.Map,
   markerRefs: Map<string, maplibregl.Marker>,
   entities: TacticalEntity[],
+  selectedId: string | null | undefined,
   onSelect: (id: string) => void,
 ) {
   const nextIds = new Set(entities.map((item) => item.id));
@@ -203,28 +190,35 @@ function syncMarkers(
       markerRefs.delete(id);
     }
   });
-  entities.forEach((entity) => upsertMarker(instance, markerRefs, entity, onSelect));
+  entities.forEach((entity) => upsertMarker(instance, markerRefs, entity, selectedId, onSelect));
 }
 
 function upsertMarker(
   instance: maplibregl.Map,
   markerRefs: Map<string, maplibregl.Marker>,
   entity: TacticalEntity,
+  selectedId: string | null | undefined,
   onSelect: (id: string) => void,
 ) {
   const current = markerRefs.get(entity.id);
   if (current) {
-    updateMarkerElement(current.getElement(), entity, onSelect);
+    updateMarkerElement(current.getElement(), entity, selectedId, onSelect);
     current.setLngLat([entity.lon, entity.lat]);
     return;
   }
   const element = document.createElement("button");
-  updateMarkerElement(element, entity, onSelect);
+  updateMarkerElement(element, entity, selectedId, onSelect);
   markerRefs.set(entity.id, new maplibregl.Marker({ element, anchor: "center" }).setLngLat([entity.lon, entity.lat]).addTo(instance));
 }
 
-function updateMarkerElement(element: HTMLElement, entity: TacticalEntity, onSelect: (id: string) => void) {
-  element.className = `mil-marker ${markerTone(entity)} ${markerStatus(entity)}`;
+function updateMarkerElement(
+  element: HTMLElement,
+  entity: TacticalEntity,
+  selectedId: string | null | undefined,
+  onSelect: (id: string) => void,
+) {
+  const selected = selectedId === entity.id ? " selected" : "";
+  element.className = `mil-marker ${markerTone(entity)} ${markerStatus(entity)}${selected}`;
   element.onclick = (event) => {
     event.stopPropagation();
     onSelect(entity.id);
@@ -246,24 +240,33 @@ type ChromeProps = {
   entities: TacticalEntity[];
   visibleEntities: TacticalEntity[];
   layers: Record<LayerKey, boolean>;
+  trayOpen: boolean;
   onToggle: (layers: Record<LayerKey, boolean>) => void;
+  onTrayToggle: () => void;
 };
 
-function MapChrome({ entities, visibleEntities, layers, onToggle }: ChromeProps) {
+function MapChrome({ entities, visibleEntities, layers, trayOpen, onToggle, onTrayToggle }: ChromeProps) {
   return (
     <>
       <div className="map-vignette" />
-      <div className="map-layer-bar">
-        {(Object.keys(layers) as LayerKey[]).map((key) => (
-          <button
-            type="button"
-            key={key}
-            className={layers[key] ? "active" : ""}
-            onClick={() => onToggle({ ...layers, [key]: !layers[key] })}
-          >
-            {key}
-          </button>
-        ))}
+      <div className="map-layer-control">
+        <button type="button" className="map-layer-tab" onClick={onTrayToggle} aria-expanded={trayOpen}>
+          LAYERS
+        </button>
+        {trayOpen && (
+          <div className="map-layer-tray">
+            {(Object.keys(layers) as LayerKey[]).map((key) => (
+              <button
+                type="button"
+                key={key}
+                className={layers[key] ? "active" : ""}
+                onClick={() => onToggle({ ...layers, [key]: !layers[key] })}
+              >
+                {key}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="map-count-strip">
         <span>ALL {entities.length}</span>
@@ -279,121 +282,50 @@ function filterEntities(
   layers: Record<LayerKey, boolean>,
   expanded: Set<string>,
   zoom: number,
+  selectedId: string | null,
 ) {
+  const visibleParents = visiblePersonnelParents(entities, expanded, zoom, selectedId);
+
   return entities.filter((entity) => {
     if (entity.entity_type === "personnel") {
-      return layers.personnel && (zoom >= SOLDIER_ZOOM || expanded.has(entity.parent_id || ""));
+      return layers.personnel && shouldShowPersonnel(entity, expanded, zoom, selectedId);
     }
     if (entity.entity_type === "contact") return layers.contacts;
     if (["vehicle", "drone", "sensor"].includes(entity.entity_type)) return layers.assets;
+    if (entity.entity_type === "squad" && visibleParents.has(entity.id)) return false;
     return layers.units;
   });
 }
 
-function normalizeMap(map?: MapState | null): MapState {
-  return {
-    ...(map || {}),
-    mgrs_grid_anchor: map?.mgrs_grid_anchor || { easting: 42820, northing: 49210, zone: "11S LV" },
-    phase_line: withFallback(map?.phase_line, baselinePhaseLine()),
-    checkpoints: map?.checkpoints || [],
-    nais: withFallback(map?.nais, baselineNais()),
-    risk_zones: withFallback(map?.risk_zones, baselineRiskZones()),
-    routes: withFallback(map?.routes, baselineRoutes()),
-    entities: withFallback(map?.entities, BASELINE_ENTITIES),
-  };
+function visiblePersonnelParents(
+  entities: TacticalEntity[],
+  expanded: Set<string>,
+  zoom: number,
+  selectedId: string | null,
+) {
+  return new Set(
+    entities
+      .filter((entity) => entity.entity_type === "personnel")
+      .filter((entity) => shouldShowPersonnel(entity, expanded, zoom, selectedId))
+      .map((entity) => entity.parent_id || ""),
+  );
 }
 
-function setSourceData(instance: maplibregl.Map, id: string, data: FeatureCollection, kind: "fill" | "line") {
-  const source = instance.getSource(id) as maplibregl.GeoJSONSource | undefined;
-  if (source) {
-    source.setData(data);
-    return;
-  }
-  instance.addSource(id, { type: "geojson", data });
-  if (kind === "line") return;
+function shouldShowPersonnel(
+  entity: TacticalEntity,
+  expanded: Set<string>,
+  zoom: number,
+  selectedId: string | null,
+) {
+  const parentId = entity.parent_id || "";
+  return (
+    (zoom >= SOLDIER_ZOOM && isMainPlatoonChild(parentId))
+    || expanded.has(parentId)
+    || selectedId === parentId
+    || selectedId === entity.id
+  );
 }
 
-function ensureLayer(instance: maplibregl.Map, id: string, source: string, type: "fill", color: string, opacity: number) {
-  if (!instance.getLayer(id)) {
-    instance.addLayer({ id, type, source, paint: { "fill-color": color, "fill-opacity": opacity } });
-  }
-}
-
-function ensureLine(instance: maplibregl.Map, id: string, source: string, color: string, width: number, dash: number[]) {
-  if (!instance.getLayer(id)) {
-    instance.addLayer({ id, type: "line", source, paint: { "line-color": color, "line-width": width, "line-dasharray": dash } });
-  }
-}
-
-function naiCollection(nais: NamedAreaOfInterest[] = []): FeatureCollection<Polygon> {
-  return collection(nais.map((item) => polygonFeature(item.id, item.polygon)));
-}
-
-function lineCollection(lines: PhaseLine[] = []): FeatureCollection<LineString> {
-  return collection(lines.map((item) => lineFeature(item.id, item.points)));
-}
-
-function routeCollection(routes: Route[] = []): FeatureCollection<LineString> {
-  return collection(routes.map((item) => lineFeature(item.id, item.points)));
-}
-
-function riskCollection(zones: RiskZone[] = []): FeatureCollection<Polygon> {
-  return collection(zones.map((item) => polygonFeature(item.id, circle(item))));
-}
-
-function collection<T extends Polygon | LineString>(features: Feature<T>[]): FeatureCollection<T> {
-  return { type: "FeatureCollection", features };
-}
-
-function polygonFeature(id: string, points: LatLon[]): Feature<Polygon> {
-  return { type: "Feature", id, properties: {}, geometry: { type: "Polygon", coordinates: [[...points.map(lngLat), lngLat(points[0])]] } };
-}
-
-function lineFeature(id: string, points: LatLon[]): Feature<LineString> {
-  return { type: "Feature", id, properties: {}, geometry: { type: "LineString", coordinates: points.map(lngLat) } };
-}
-
-function circle(zone: RiskZone): LatLon[] {
-  return Array.from({ length: 32 }, (_, index) => {
-    const angle = (index / 32) * Math.PI * 2;
-    return { lat: zone.lat + Math.sin(angle) * 0.004, lon: zone.lon + Math.cos(angle) * 0.004 };
-  });
-}
-
-function lngLat(point: LatLon): [number, number] {
-  return [point.lon, point.lat];
-}
-
-function computeCenter(map: MapState): [number, number] {
-  const first = map.entities?.[0];
-  return first ? [first.lon, first.lat] : [-118.6818, 37.4755];
-}
-
-function handleMapError(event: maplibregl.ErrorEvent, onTilesFailed: () => void) {
-  const error = event.error as { url?: string } | undefined;
-  if (error?.url?.includes("tile.opentopomap.org")) onTilesFailed();
-}
-
-function withFallback<T>(value: T[] | undefined, fallback: T[]): T[] {
-  return Array.isArray(value) && value.length > 0 ? value : fallback;
-}
-
-function entity(id: string, label: string, callsign: string, entityType: TacticalEntity["entity_type"], sidc: string, lat: number, lon: number): TacticalEntity {
-  return { id, label, callsign, entity_type: entityType, sidc, lat, lon, parent_id: null, affiliation: "friend", nationality: "USA", echelon: entityType, status: { readiness: "green", health: "green", ammo: "green", comms: "green", mobility: "green" }, history: [] };
-}
-
-function baselinePhaseLine(): PhaseLine[] {
-  return [{ id: "pl_raven", label: "PL Raven", points: [{ lat: 37.4662, lon: -118.6788 }, { lat: 37.4825, lon: -118.6762 }] }];
-}
-
-function baselineNais(): NamedAreaOfInterest[] {
-  return [{ id: "nai_2", label: "NAI-2 East Ridge", polygon: [{ lat: 37.4772, lon: -118.6758 }, { lat: 37.4772, lon: -118.6718 }, { lat: 37.4812, lon: -118.6718 }, { lat: 37.4812, lon: -118.6758 }] }];
-}
-
-function baselineRiskZones(): RiskZone[] {
-  return [{ id: "rz_nai_2", label: "NAI-2 contact risk", lat: 37.4792, lon: -118.6738, radius_m: 520 }];
-}
-
-function baselineRoutes(): Route[] {
-  return [{ id: "route-finch", name: "Route Finch", status: "amber", points: [{ lat: 37.4685, lon: -118.6886 }, { lat: 37.4718, lon: -118.6821 }, { lat: 37.4815, lon: -118.6698 }] }];
+function isMainPlatoonChild(parentId: string) {
+  return ["1st_squad", "2nd_squad", "3rd_squad", "weapons_squad"].includes(parentId);
 }

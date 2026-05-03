@@ -11,9 +11,10 @@ import "../styles/receiver-decode.css";
 
 type Props = {
   events?: ReceiverDecodeEvent[];
+  onDecoded?: (event: ReceiverDecodeEvent) => void | Promise<void>;
 };
 
-export default function ReceiverDecodePanel({ events = [] }: Props) {
+export default function ReceiverDecodePanel({ events = [], onDecoded }: Props) {
   const [isDecoding, setIsDecoding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localEvents, setLocalEvents] = useState<ReceiverDecodeEvent[]>([]);
@@ -28,6 +29,7 @@ export default function ReceiverDecodePanel({ events = [] }: Props) {
     try {
       const event = await decodeReceiverDemoFrame();
       setLocalEvents((current) => [event, ...current]);
+      await onDecoded?.(event);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Receiver decode failed.");
     } finally {
