@@ -8,9 +8,9 @@
 
 ## Core Framing
 
-Current command and control takes too long to turn raw field reports into commander understanding.
+In contested comms, the commander is not starved for information. The commander is starved for usable meaning that can fit through the link.
 
-That delay gets worse in low-bandwidth and jammed-signal environments. The commander still needs SALUTE reports, ACE/LACE updates, UAS observations, sensor triggers, and PLI updates, but the link cannot carry every source report fast enough.
+Platoons generate reports constantly: SALUTE reports, ACE/LACE updates, UAS observations, sensor triggers, and PLI. Under jamming and intermittent radio, that raw traffic cannot move fast enough to give the commander a coherent picture.
 
 TacNet Edge solves the bandwidth and latency problem by compressing meaning before it moves.
 
@@ -71,7 +71,7 @@ Avoid an unsupported hard claim like "this saves hundreds of lives" unless the t
 
 ## Opening
 
-> The problem is not that platoon leaders lack data. It is that command and control takes too long to turn raw reports into a usable picture.
+> In contested comms, the commander is not starved for information. The commander is starved for usable meaning that can fit through the link.
 >
 > And when bandwidth collapses, especially under jamming, the commander gets the worst of both worlds: too much fragmented information and too little pipe to move it.
 
