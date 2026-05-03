@@ -4,7 +4,6 @@ import "./Dashboard.css";
 
 import TopBar from "../components/TopBar";
 import LogStream from "../components/LogStream";
-import SignalBreakdown from "../components/SignalBreakdown";
 import IncidentCard from "../components/IncidentCard";
 import MapView from "../components/MapView";
 import AssetStatus from "../components/AssetStatus";
@@ -33,14 +32,11 @@ type FocusedSignal = {
   token: number;
 } | null;
 
-type OverlayKey = "reports" | "mesh" | "sitrep" | "timeline" | "voice" | "receiver" | "assets" | "signals";
-type SignalRows = Parameters<typeof SignalBreakdown>[0]["signals"];
-type SignalLike = NonNullable<SignalRows>[number];
+type OverlayKey = "reports" | "mesh" | "sitrep" | "timeline" | "voice" | "receiver" | "assets";
 type AssetRows = Parameters<typeof AssetStatus>[0]["assets"];
 type VoiceReportProps = Parameters<typeof VoiceReportPanel>[0];
 type DashboardState = {
   events?: RavenGapEvent[];
-  signals?: SignalRows;
   correlation?: unknown;
   incident?: unknown;
   map_state?: MapState;
@@ -59,7 +55,6 @@ const OVERLAY_TABS: { key: OverlayKey; label: string }[] = [
   { key: "voice", label: "VOICE" },
   { key: "receiver", label: "RX" },
   { key: "assets", label: "ASSETS" },
-  { key: "signals", label: "INDICATORS" },
 ];
 
 /**
@@ -297,18 +292,7 @@ function overlayContent(props: Parameters<typeof OverlayPanel>[0]) {
   if (props.openOverlay === "assets") {
     return <AssetStatus assets={assetRows(state.map_state?.assets)} />;
   }
-  return (
-    <SignalBreakdown
-      signals={state.signals}
-      selectedSignalKind={focusedSignal?.kind ?? null}
-      onSignalSelect={(signal) => props.setFocusedSignal(signalSelection(signal, focusedSignal))}
-    />
-  );
-}
-
-function signalSelection(signal: SignalLike, current: FocusedSignal): FocusedSignal {
-  if (current?.kind === signal.kind) return null;
-  return { kind: signal.kind, evidenceIds: signal.evidence ?? [], token: Date.now() };
+  return null;
 }
 
 function overlayTitle(key: OverlayKey) {

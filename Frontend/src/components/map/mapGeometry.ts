@@ -18,8 +18,20 @@ import type {
 
 export const STATIC_VECTOR_STYLE: maplibregl.StyleSpecification = {
   version: 8,
-  sources: {},
-  layers: [{ id: "background", type: "background", paint: { "background-color": "#07100b" } }],
+  sources: {
+    terrain: { type: "geojson", data: staticTerrain() },
+    contours: { type: "geojson", data: staticContours() },
+    roads: { type: "geojson", data: staticRoads() },
+    streams: { type: "geojson", data: staticStreams() },
+  },
+  layers: [
+    { id: "background", type: "background", paint: { "background-color": "#07100b" } },
+    { id: "terrain-fill", type: "fill", source: "terrain", paint: { "fill-color": "#203226", "fill-opacity": 0.52 } },
+    { id: "terrain-line", type: "line", source: "terrain", paint: { "line-color": "#39523c", "line-width": 1, "line-opacity": 0.62 } },
+    { id: "contour-line", type: "line", source: "contours", paint: { "line-color": "#8b6d42", "line-width": 0.75, "line-opacity": 0.42 } },
+    { id: "stream-line", type: "line", source: "streams", paint: { "line-color": "#315f8f", "line-width": 1.4, "line-opacity": 0.58 } },
+    { id: "road-line", type: "line", source: "roads", paint: { "line-color": "#c7c7bb", "line-width": 2.1, "line-opacity": 0.48 } },
+  ],
 };
 
 export const DARK_RASTER_STYLE: maplibregl.StyleSpecification = {
@@ -33,10 +45,11 @@ export const DARK_RASTER_STYLE: maplibregl.StyleSpecification = {
         "https://c.tile.opentopomap.org/{z}/{x}/{y}.png",
       ],
       tileSize: 256,
+      maxzoom: 17,
       attribution: "&copy; OpenTopoMap",
     },
   },
-  layers: [{ id: "topo-layer", type: "raster", source: "topo", minzoom: 0, maxzoom: 17 }],
+  layers: [{ id: "topo-layer", type: "raster", source: "topo", minzoom: 0, maxzoom: 24 }],
 };
 
 export const BASELINE_ENTITIES: TacticalEntity[] = [
@@ -156,6 +169,69 @@ function entity(id: string, label: string, callsign: string, entityType: Tactica
 
 function withFallback<T>(value: T[] | undefined, fallback: T[]): T[] {
   return Array.isArray(value) && value.length > 0 ? value : fallback;
+}
+
+function staticTerrain(): FeatureCollection<Polygon> {
+  return collection([
+    polygonFeature("west-ridge", [
+      { lat: 37.465, lon: -118.691 },
+      { lat: 37.485, lon: -118.689 },
+      { lat: 37.487, lon: -118.684 },
+      { lat: 37.462, lon: -118.682 },
+    ]),
+    polygonFeature("east-ridge", [
+      { lat: 37.467, lon: -118.676 },
+      { lat: 37.487, lon: -118.674 },
+      { lat: 37.487, lon: -118.666 },
+      { lat: 37.466, lon: -118.668 },
+    ]),
+    polygonFeature("central-draw", [
+      { lat: 37.466, lon: -118.683 },
+      { lat: 37.484, lon: -118.681 },
+      { lat: 37.482, lon: -118.677 },
+      { lat: 37.466, lon: -118.678 },
+    ]),
+  ]);
+}
+
+function staticContours(): FeatureCollection<LineString> {
+  return collection(Array.from({ length: 15 }, (_, index) => (
+    lineFeature(`contour-${index}`, contourPoints(index))
+  )));
+}
+
+function staticRoads(): FeatureCollection<LineString> {
+  return collection([
+    lineFeature("ridge-road", [
+      { lat: 37.463, lon: -118.679 },
+      { lat: 37.469, lon: -118.678 },
+      { lat: 37.475, lon: -118.677 },
+      { lat: 37.483, lon: -118.676 },
+    ]),
+  ]);
+}
+
+function staticStreams(): FeatureCollection<LineString> {
+  return collection([
+    lineFeature("draw-stream", [
+      { lat: 37.485, lon: -118.686 },
+      { lat: 37.479, lon: -118.683 },
+      { lat: 37.471, lon: -118.681 },
+      { lat: 37.463, lon: -118.684 },
+    ]),
+  ]);
+}
+
+function contourPoints(index: number): LatLon[] {
+  const startLat = 37.464 + index * 0.00145;
+  const drift = index % 2 === 0 ? 0.001 : -0.001;
+  return [
+    { lat: startLat, lon: -118.691 },
+    { lat: startLat + 0.001 + drift, lon: -118.686 },
+    { lat: startLat + 0.0003, lon: -118.681 },
+    { lat: startLat + 0.0014 - drift, lon: -118.676 },
+    { lat: startLat + 0.0002, lon: -118.668 },
+  ];
 }
 
 function baselinePhaseLine(): PhaseLine[] {

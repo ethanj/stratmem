@@ -28,7 +28,8 @@ import {
 import { markerStatus, markerTone, symbolSvgForEntity } from "./map/militarySymbols";
 
 const DEFAULT_ZOOM = 13.4;
-const SOLDIER_ZOOM = 15.15;
+const SQUAD_ZOOM = 13.85;
+const SOLDIER_ZOOM = 15.8;
 
 type MapViewProps = {
   map?: MapState | null;
@@ -37,6 +38,10 @@ type MapViewProps = {
   onSelectEntity?: (id: string) => void;
 };
 type LayerKey = "units" | "personnel" | "assets" | "contacts" | "controls";
+type CameraState = {
+  center: [number, number];
+  zoom: number;
+};
 
 export default function MapView({
   map,
@@ -70,8 +75,13 @@ export default function MapView({
         <h2>S2 COMMON OPERATING PICTURE</h2>
         <div className="map-header-controls">
           <span className="map-mgrs-pill">{displayMap.mgrs_grid_anchor?.zone || "MGRS 11S LV"}</span>
-          <button type="button" className="map-mode-btn" onClick={() => setStaticMode((value) => !value)}>
-            {staticMode ? "TILES" : "VECTOR"}
+          <button
+            type="button"
+            className="map-mode-btn"
+            title={staticMode ? "Switch to online terrain tiles" : "Switch to local vector fallback"}
+            onClick={() => setStaticMode((value) => !value)}
+          >
+            {staticMode ? "LOCAL GRID" : "TERRAIN"}
           </button>
         </div>
       </div>
@@ -116,9 +126,10 @@ function MapCanvas(props: CanvasProps) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
   const propsRef = useRef(props);
+  const cameraRef = useRef<CameraState | null>(null);
 
   useEffect(() => { propsRef.current = props; }, [props]);
-  useEffect(() => initMap(containerRef, mapRef, markerRefs, propsRef), [props.staticMode]);
+  useEffect(() => initMap(containerRef, mapRef, markerRefs, propsRef, cameraRef), [props.staticMode]);
   useEffect(() => updateMap(mapRef.current, markerRefs.current, props), [props]);
 
   return <div ref={containerRef} className="real-map" />;
@@ -129,25 +140,32 @@ function initMap(
   mapRef: MutableRefObject<maplibregl.Map | null>,
   markerRefs: MutableRefObject<Map<string, maplibregl.Marker>>,
   propsRef: MutableRefObject<CanvasProps>,
+  cameraRef: MutableRefObject<CameraState | null>,
 ) {
   if (!containerRef.current || mapRef.current) return undefined;
+  const camera = cameraRef.current;
   const instance = new maplibregl.Map({
     container: containerRef.current,
     style: propsRef.current.staticMode ? STATIC_VECTOR_STYLE : DARK_RASTER_STYLE,
-    center: computeCenter(propsRef.current.map),
-    zoom: DEFAULT_ZOOM,
-    pitch: 24,
-    bearing: -8,
+    center: camera?.center ?? computeCenter(propsRef.current.map),
+    zoom: camera?.zoom ?? DEFAULT_ZOOM,
+    pitch: 0,
+    bearing: 0,
     attributionControl: false,
   });
 
-  instance.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+  instance.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
   instance.on("zoom", () => propsRef.current.onZoom(instance.getZoom()));
   instance.on("error", (event) => handleMapError(event, propsRef.current.onTilesFailed));
-  instance.on("load", () => updateMap(instance, markerRefs.current, propsRef.current));
+  instance.on("load", () => {
+    propsRef.current.onZoom(instance.getZoom());
+    updateMap(instance, markerRefs.current, propsRef.current);
+  });
   mapRef.current = instance;
 
   return () => {
+    const center = instance.getCenter();
+    cameraRef.current = { center: [center.lng, center.lat], zoom: instance.getZoom() };
     markerRefs.current.forEach((marker) => marker.remove()); markerRefs.current.clear();
     instance.remove();
     mapRef.current = null;
@@ -292,7 +310,9 @@ function filterEntities(
     }
     if (entity.entity_type === "contact") return layers.contacts;
     if (["vehicle", "drone", "sensor"].includes(entity.entity_type)) return layers.assets;
+    if (entity.entity_type === "platoon") return layers.units && shouldShowPlatoon(entity, zoom, selectedId);
     if (entity.entity_type === "squad" && visibleParents.has(entity.id)) return false;
+    if (entity.entity_type === "squad") return layers.units && shouldShowSquad(entity, expanded, zoom, selectedId);
     return layers.units;
   });
 }
@@ -324,6 +344,25 @@ function shouldShowPersonnel(
     || selectedId === parentId
     || selectedId === entity.id
   );
+}
+
+function shouldShowPlatoon(
+  entity: TacticalEntity,
+  zoom: number,
+  selectedId: string | null,
+) {
+  if (entity.id !== "plt-raven") return true;
+  return zoom < SQUAD_ZOOM || selectedId === entity.id;
+}
+
+function shouldShowSquad(
+  entity: TacticalEntity,
+  expanded: Set<string>,
+  zoom: number,
+  selectedId: string | null,
+) {
+  if (entity.parent_id !== "plt-raven") return true;
+  return zoom >= SQUAD_ZOOM || expanded.has(entity.id) || selectedId === entity.id;
 }
 
 function isMainPlatoonChild(parentId: string) {

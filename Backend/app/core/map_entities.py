@@ -348,13 +348,13 @@ def location_value(event: dict[str, Any] | None, key: str, fallback: float) -> f
 
 def personnel_lat_offset(index: int) -> float:
     """Return deterministic individual-soldier latitude spread."""
-    offsets = [-0.00042, -0.00028, -0.00014, 0.0, 0.00014, 0.00028, 0.00042, 0.00008, -0.00008]
+    offsets = [0.00018, 0.00012, 0.00004, -0.00004, -0.00012, 0.00006, -0.00002, -0.00010, -0.00018]
     return offsets[index % len(offsets)]
 
 
 def personnel_lon_offset(index: int) -> float:
     """Return deterministic individual-soldier longitude spread."""
-    offsets = [-0.00036, -0.00018, 0.00002, 0.00024, 0.00044, -0.00046, -0.00024, 0.00056, -0.00058]
+    offsets = [-0.00008, 0.00012, 0.00022, 0.00012, -0.00002, -0.00020, -0.00030, -0.00020, -0.00008]
     return offsets[index % len(offsets)]
 
 
