@@ -1,4 +1,11 @@
-# app/main.py
+"""FastAPI entrypoint for the Sentinel Forge and TacNet Edge demo API.
+
+The app keeps legacy routes such as `/incident/action` while adding the Branch B
+TacNet state fields and `/comms/degrade` endpoint. Route handlers remain thin:
+they mutate in-memory state, run the pipeline, then return the normalized
+`/state` contract.
+"""
+
 from pathlib import Path
 from typing import Optional
 
@@ -6,7 +13,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
 
 from app.adapters.mock import MockAdapter
 from app.api.routes.agent import router as agent_router
@@ -20,6 +26,11 @@ from app.core.scenario import (
 )
 from app.generator.background_events import build_background_event
 from app.state.store import StateStore
+from app.voice.salute_extractor import (
+    build_voice_report,
+    extract_salute,
+    voice_event_payload,
+)
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -50,6 +61,19 @@ class IncidentActionUpdateRequest(BaseModel):
     note: Optional[str] = None
 
 
+class CommsDegradeRequest(BaseModel):
+    degraded: bool
+    kbps: Optional[float] = None
+
+
+class CompressionToggleRequest(BaseModel):
+    enabled: bool
+
+
+class VoiceReportRequest(BaseModel):
+    audio_id: str
+
+
 def current_scenario() -> dict:
     return get_scenario_metadata(selected_scenario_id)
 
@@ -68,6 +92,7 @@ def run_and_apply_pipeline(state: dict) -> dict:
         previous_correlation=state.get("correlation"),
         operator_actions=operator_actions,
         previous_incident=state.get("incident"),
+        comms=state.get("comms"),
     )
 
     return store.apply_pipeline_result(result)
@@ -158,10 +183,93 @@ def get_state():
     return state
 
 
+@app.post("/comms/degrade")
+def degrade_comms(payload: CommsDegradeRequest):
+    state = store.set_comms(degraded=payload.degraded, kbps=payload.kbps)
+    state = run_and_apply_pipeline(state)
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
+@app.post("/compression/toggle")
+def toggle_compression(payload: CompressionToggleRequest):
+    state = store.set_compression_enabled(payload.enabled)
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
+@app.post("/voice/report")
+def voice_report(payload: VoiceReportRequest):
+    validate_voice_audio(payload.audio_id)
+    state = store.get()
+
+    if not state.get("comms", {}).get("compression_enabled"):
+        return block_raw_voice_report(state)
+
+    return process_compressed_voice_report(payload.audio_id, state)
+
+
 @app.post("/reset")
 def reset():
     reset_adapter()
     return store.reset(scenario=current_scenario())
+
+
+def validate_voice_audio(audio_id: str) -> None:
+    try:
+        extract_salute(audio_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Voice fixture not found") from exc
+
+
+def block_raw_voice_report(state: dict) -> dict:
+    base_report = build_voice_report()
+    state["voice_report"] = build_voice_report(
+        status="blocked_raw",
+        mode="raw_audio",
+        transmit_bytes=base_report["audio_estimated_bytes"],
+        fits_budget=False,
+        blocked_reason="raw audio exceeds 3 Kbps / 10 sec budget",
+    )
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
+def process_compressed_voice_report(audio_id: str, state: dict) -> dict:
+    event_payload = voice_event_payload(audio_id)
+    base_report = build_voice_report()
+    state["voice_report"] = build_voice_report(
+        status="processed",
+        mode="compressed_json",
+        transmit_bytes=base_report["json_bytes"],
+        fits_budget=True,
+    )
+    state["events"] = upsert_event(state.get("events", []), event_payload)
+    state = store.replace(state)
+    state = run_and_apply_pipeline(state)
+    state["scenario"] = current_scenario()
+    return store.replace(state)
+
+
+def upsert_event(
+    events: list[dict],
+    event_payload: dict,
+) -> list[dict]:
+    event_id = event_payload.get("id")
+    replaced = False
+    updated_events = []
+
+    for event in events:
+        if event.get("id") == event_id:
+            updated_events.append(event_payload)
+            replaced = True
+            continue
+        updated_events.append(event)
+
+    if not replaced:
+        updated_events.append(event_payload)
+
+    return updated_events
 
 
 
@@ -183,6 +291,7 @@ def resolve_incident(payload: IncidentResolveRequest):
         previous_correlation=state.get("correlation"),
         operator_actions=state.get("operator_actions", {}).get(payload.incident_id, {}).get("action_status", {}),
         previous_incident=incident,
+        comms=state.get("comms"),
     )
 
     return store.apply_pipeline_result(result)
@@ -202,6 +311,7 @@ def update_incident_action(payload: IncidentActionUpdateRequest):
         previous_correlation=state.get("correlation"),
         operator_actions=state.get("operator_actions", {}).get(payload.incident_id, {}).get("action_status", {}),
         previous_incident=state.get("incident"),
+        comms=state.get("comms"),
     )
 
     return store.apply_pipeline_result(result)
