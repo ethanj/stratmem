@@ -82,7 +82,7 @@ function httpError(status, message) {
 function getRoom(roomId) {
   const key = roomId.trim().slice(0, 64);
   if (!rooms.has(key)) {
-    rooms.set(key, []);
+    rooms.set(key, { messages: [], nextId: 1 });
   }
   return rooms.get(key);
 }
@@ -91,18 +91,26 @@ async function handleSignal(req, res, url) {
   const roomId = url.searchParams.get("room") ?? "default";
   const room = getRoom(roomId);
 
+  if (req.method === "DELETE") {
+    room.messages = [];
+    jsonResponse(res, 200, { ok: true });
+    return;
+  }
+
   if (req.method === "POST") {
     const message = await readJson(req);
     const entry = {
-      id: room.length + 1,
+      id: room.nextId,
       created_at: Date.now(),
       sender_id: String(message.sender_id ?? ""),
+      session_id: String(message.session_id ?? ""),
       kind: String(message.kind ?? ""),
       payload: message.payload ?? null,
     };
-    room.push(entry);
-    if (room.length > 200) {
-      room.splice(0, room.length - 200);
+    room.nextId += 1;
+    room.messages.push(entry);
+    if (room.messages.length > 200) {
+      room.messages.splice(0, room.messages.length - 200);
     }
     jsonResponse(res, 200, { ok: true, id: entry.id });
     return;
@@ -110,7 +118,7 @@ async function handleSignal(req, res, url) {
 
   if (req.method === "GET") {
     const since = Number.parseInt(url.searchParams.get("since") ?? "0", 10);
-    jsonResponse(res, 200, { messages: room.filter((entry) => entry.id > since) });
+    jsonResponse(res, 200, { messages: room.messages.filter((entry) => entry.id > since) });
     return;
   }
 

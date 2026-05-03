@@ -10,12 +10,17 @@ export class PeerLink extends EventTarget {
     this.room = room;
     this.role = role;
     this.clientId = crypto.randomUUID();
+    this.sessionId = role === "sender" ? crypto.randomUUID() : "";
+    this.signalingStartedAt = Date.now();
     this.lastSignalId = 0;
     this.channel = null;
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
     this.pollTimer = null;
+    this.canSendCandidates = false;
+    this.localPendingCandidates = [];
+    this.remotePendingCandidates = [];
     this.bandwidthKbps = 3;
     this.jitterMs = 150;
   }
@@ -23,16 +28,19 @@ export class PeerLink extends EventTarget {
   async connect() {
     this.pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
-        this.sendSignal("candidate", candidate);
+        this.queueLocalCandidate(candidate);
       }
     };
 
     if (this.role === "sender") {
+      await this.resetSignals();
       this.channel = this.pc.createDataChannel("tacnet-metadata", { ordered: true });
       this.attachChannel(this.channel);
       const offer = await this.pc.createOffer();
       await this.pc.setLocalDescription(offer);
       await this.sendSignal("offer", offer);
+      this.canSendCandidates = true;
+      await this.flushLocalCandidates();
     } else {
       this.pc.ondatachannel = ({ channel }) => {
         this.channel = channel;
@@ -65,6 +73,8 @@ export class PeerLink extends EventTarget {
 
   close() {
     if (this.pollTimer) window.clearInterval(this.pollTimer);
+    this.localPendingCandidates = [];
+    this.remotePendingCandidates = [];
     this.channel?.close();
     this.pc.close();
   }
@@ -80,28 +90,40 @@ export class PeerLink extends EventTarget {
   }
 
   async pollSignals() {
-    const params = new URLSearchParams({ room: this.room, since: String(this.lastSignalId) });
-    const response = await fetch(`/api/signal?${params.toString()}`);
-    const { messages } = await response.json();
-    for (const message of messages) {
-      this.lastSignalId = Math.max(this.lastSignalId, message.id);
-      if (message.sender_id === this.clientId) continue;
-      await this.handleSignal(message);
+    try {
+      const params = new URLSearchParams({ room: this.room, since: String(this.lastSignalId) });
+      const response = await fetch(`/api/signal?${params.toString()}`);
+      const { messages } = await response.json();
+      for (const message of messages) {
+        this.lastSignalId = Math.max(this.lastSignalId, message.id);
+        if (message.sender_id === this.clientId || this.isStaleSignal(message)) continue;
+        await this.handleSignal(message);
+      }
+    } catch (error) {
+      this.emit("error", { message: error.message || "Signal polling failed" });
     }
   }
 
   async handleSignal(message) {
     if (message.kind === "offer" && this.role === "receiver") {
+      if (this.sessionId && message.session_id !== this.sessionId) return;
+      this.sessionId = String(message.session_id ?? "");
       await this.pc.setRemoteDescription(message.payload);
+      await this.flushRemoteCandidates();
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
       await this.sendSignal("answer", answer);
+      this.canSendCandidates = true;
+      await this.flushLocalCandidates();
     }
     if (message.kind === "answer" && this.role === "sender") {
+      if (!this.isCurrentSession(message)) return;
       await this.pc.setRemoteDescription(message.payload);
+      await this.flushRemoteCandidates();
     }
     if (message.kind === "candidate" && message.payload) {
-      await this.pc.addIceCandidate(message.payload);
+      if (!this.isCurrentSession(message)) return;
+      await this.addOrQueueRemoteCandidate(message.payload);
     }
   }
 
@@ -109,8 +131,67 @@ export class PeerLink extends EventTarget {
     await fetch(`/api/signal?room=${encodeURIComponent(this.room)}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sender_id: this.clientId, kind, payload }),
+      body: JSON.stringify({
+        sender_id: this.clientId,
+        session_id: this.sessionId,
+        kind,
+        payload,
+      }),
     });
+  }
+
+  async resetSignals() {
+    await fetch(`/api/signal?room=${encodeURIComponent(this.room)}`, {
+      method: "DELETE",
+    });
+  }
+
+  queueLocalCandidate(candidate) {
+    if (!this.canSendCandidates) {
+      this.localPendingCandidates.push(candidate);
+      return;
+    }
+    this.sendSignal("candidate", candidate).catch((error) => {
+      this.emit("error", { message: error.message || "Failed to send ICE candidate" });
+    });
+  }
+
+  async flushLocalCandidates() {
+    const candidates = this.localPendingCandidates.splice(0);
+    for (const candidate of candidates) {
+      await this.sendSignal("candidate", candidate);
+    }
+  }
+
+  async addOrQueueRemoteCandidate(candidate) {
+    if (!this.pc.remoteDescription) {
+      this.remotePendingCandidates.push(candidate);
+      return;
+    }
+    await this.pc.addIceCandidate(candidate);
+  }
+
+  async flushRemoteCandidates() {
+    const candidates = this.remotePendingCandidates.splice(0);
+    for (const candidate of candidates) {
+      await this.pc.addIceCandidate(candidate);
+    }
+  }
+
+  isCurrentSession(message) {
+    return Boolean(this.sessionId) && message.session_id === this.sessionId;
+  }
+
+  isStaleSignal(message) {
+    const ageBufferMs = 30000;
+    const createdAt = Number(message.created_at ?? 0);
+    if (createdAt && createdAt < this.signalingStartedAt - ageBufferMs) {
+      return true;
+    }
+    if (this.role === "receiver" && !this.sessionId) {
+      return message.kind !== "offer";
+    }
+    return !this.isCurrentSession(message);
   }
 
   emit(name, detail) {

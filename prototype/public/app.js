@@ -97,7 +97,12 @@ async function connectPeer() {
   updateLinkLabels();
   wirePeer(state.peer);
   ui.peerStatus.textContent = "Peer: connecting";
-  await state.peer.connect();
+  try {
+    await state.peer.connect();
+  } catch (error) {
+    ui.peerStatus.textContent = "Peer: error";
+    addEvent(`Peer error: ${error.message}`);
+  }
 }
 
 function wirePeer(peer) {
@@ -117,6 +122,10 @@ function wirePeer(peer) {
   });
   peer.addEventListener("closed", () => {
     ui.peerStatus.textContent = "Peer: closed";
+  });
+  peer.addEventListener("error", ({ detail }) => {
+    ui.peerStatus.textContent = "Peer: error";
+    addEvent(`Peer error: ${detail.message}`);
   });
 }
 
