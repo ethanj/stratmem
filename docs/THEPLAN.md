@@ -11,6 +11,8 @@ Two of the four already own the relevant codebases (Sentinel Forge and TacNet/Me
 **Build shell:** `../sentinel-forge/`
 **Hour-1 branch lock is in effect.** No switching paths mid-build.
 
+**v3 addendum:** `docs/team-*-v3.md` carries forward the 3 Kbps degraded-link plan and adds the one prerecorded voice-to-SALUTE report with a compression OFF/ON switch. `docs/pitch-v3-degraded-c2.md` is the matching pitch draft. `docs/team-*-v2.md` is left unchanged for teammates already executing it.
+
 ---
 
 ## Team roles
