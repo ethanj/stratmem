@@ -1,19 +1,19 @@
 # Local Peer Test - Receiver
 
 - Status: PASS
-- Started at: 2026-05-03T05:26:03.054Z
-- Room: local-peer-mopbv0a6
+- Started at: 2026-05-03T05:28:11.904Z
+- Room: local-peer-mopbxrpc
 - URL: http://10.1.60.244:8787
 - Error: none
 
 ## Actions
-- Reset signaling room local-peer-mopbv0a6
+- Reset signaling room local-peer-mopbxrpc
 - Launch sender Chrome on CDP port 9331
 - Launch receiver Chrome on CDP port 9332
 - Opened sender client at http://10.1.60.244:8787
 - Opened receiver client at http://10.1.60.244:8787
-- Prepared receiver client with room local-peer-mopbv0a6
-- Prepared sender client with room local-peer-mopbv0a6
+- Prepared receiver client with room local-peer-mopbxrpc
+- Prepared sender client with room local-peer-mopbxrpc
 - receiver clicked Connect Peer
 - sender clicked Connect Peer
 - Both peer DataChannels opened
@@ -50,20 +50,20 @@
   "frame": {
     "0": 1,
     "1": 2,
-    "2": "2026-05-03T05:26:05.880Z",
-    "4": 1820609703,
+    "2": "2026-05-03T05:28:14.334Z",
+    "4": 2678750489,
     "5": 2,
     "6": {
       "1": "device_dead",
       "2": "sender",
-      "3": "2026-05-03T05:26:05.880Z",
+      "3": "2026-05-03T05:28:14.334Z",
       "4": "Source device marked dead by operator."
     }
   },
   "payload": {
     "1": "device_dead",
     "2": "sender",
-    "3": "2026-05-03T05:26:05.880Z",
+    "3": "2026-05-03T05:28:14.334Z",
     "4": "Source device marked dead by operator."
   }
 }
@@ -75,14 +75,14 @@ SOURCE DEVICE DEAD. Treat sender as offline.
 ```
 
 ## Timeline
-- 10:26:06 PM - Received kill switch 131 bytes
-- 10:26:05 PM - Received 178 bytes
-- 10:26:05 PM - Peer data channel opened
-- 10:26:05 PM - Peer state: connected/connected
-- 10:26:04 PM - Peer state: connecting/connected
-- 10:26:04 PM - Peer state: connecting/connected
-- 10:26:04 PM - Peer state: connecting/checking
-- 10:26:04 PM - Peer state: new/checking
+- 10:28:14 PM - Received kill switch 131 bytes
+- 10:28:14 PM - Received 178 bytes
+- 10:28:13 PM - Peer data channel opened
+- 10:28:13 PM - Peer state: connected/connected
+- 10:28:13 PM - Peer state: connecting/connected
+- 10:28:13 PM - Peer state: connecting/connected
+- 10:28:13 PM - Peer state: connecting/checking
+- 10:28:13 PM - Peer state: new/checking
 
 ## Console
 - none

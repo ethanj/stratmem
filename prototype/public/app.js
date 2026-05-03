@@ -6,6 +6,7 @@
  */
 import { decodeFrame, encodeFrame, fnv1a, toHex } from "./codec.js?v=peer-diagnostics-20260503";
 import { compactMetadata, expandMetadata, extractMetadata, reconstructText, samples, validateMetadata } from "./metadata.js?v=free-text-fallback-20260503";
+import { renderLinkMetrics } from "./metrics.js?v=compression-visual-20260503";
 import { createId } from "./ids.js?v=uuid-fallback-20260503";
 import { PeerLink } from "./link.js?v=uuid-fallback-20260503";
 import { OfflineWhisperTranscriber } from "./stt.js?v=peer-diagnostics-20260503";
@@ -26,6 +27,8 @@ const state = {
   lastSummary: "",
   events: [],
   startedAt: 0,
+  lastSpeechMs: 0,
+  lastInputWasVoice: false,
 };
 
 const ui = Object.fromEntries(
@@ -76,6 +79,8 @@ function bindControls() {
   ui.connectStt.addEventListener("click", connectStt);
   ui.sendTranscript.addEventListener("click", () => {
     logClient("manual_send_click", { bytes: ui.manualTranscript.value.length });
+    state.lastInputWasVoice = false;
+    state.lastSpeechMs = 0;
     processTranscript(ui.manualTranscript.value);
   });
   ui.killSwitch.addEventListener("click", sendKillSwitch);
@@ -87,6 +92,8 @@ function bindControls() {
     button.addEventListener("click", () => {
       ui.manualTranscript.value = samples[button.dataset.sample];
       logClient("sample_click", { sample: button.dataset.sample });
+      state.lastInputWasVoice = false;
+      state.lastSpeechMs = 0;
       processTranscript(ui.manualTranscript.value);
     });
   });
@@ -211,6 +218,7 @@ function startTalk() {
     addEvent("Connect Offline STT before push-to-talk");
     return;
   }
+  state.lastInputWasVoice = true;
   state.startedAt = performance.now();
   ui.talkButton.classList.add("recording");
   ui.talkButton.textContent = "Release to Send";
@@ -226,6 +234,9 @@ async function stopTalk() {
   logClient("talk_stop", {});
   ui.talkButton.classList.remove("recording");
   ui.talkButton.textContent = "Hold to Talk";
+  if (state.startedAt > 0) {
+    state.lastSpeechMs = performance.now() - state.startedAt;
+  }
   try {
     await state.stt?.stop();
   } catch (error) {
@@ -315,6 +326,8 @@ function receiveFrame(bytes, receivedAt) {
   const verified = checksum === fnv1a(JSON.stringify(compact));
   const metadata = expandMetadata(compact);
   const summary = reconstructText(metadata);
+  state.lastMetadata = metadata;
+  state.transcript = metadata.raw_transcript || summary;
   state.lastSummary = summary;
   ui.receiverMetadata.textContent = JSON.stringify({ verified, frame, metadata }, null, 2);
   ui.receiverSummary.textContent = summary;
@@ -363,24 +376,14 @@ function speak(text) {
 }
 
 function renderMetrics(last = {}) {
-  const transcriptBytes = new TextEncoder().encode(state.transcript).length;
-  const jsonBytes = new TextEncoder().encode(JSON.stringify(state.lastMetadata ?? {})).length;
-  const binaryBytes = last.bytes ?? 0;
-  const audioEstimate = Math.ceil(10 * 6000 / 8);
-  const budgetBytes = Math.floor((Number(ui.bandwidthInput.value) * 1000 * 10) / 8);
-  const compression = binaryBytes > 0 ? (audioEstimate / binaryBytes).toFixed(1) : "--";
-  ui.metricsView.innerHTML = [
-    metric("Audio estimate", `${audioEstimate} B`, "10 sec at 6 kbit/s"),
-    metric("Transcript", `${transcriptBytes} B`, "local only"),
-    metric("Metadata JSON", `${jsonBytes} B`, "debug only"),
-    metric("CBOR frame", `${binaryBytes} B`, `${compression}x smaller than audio`),
-    metric("10 sec budget", `${budgetBytes} B`, `${ui.bandwidthInput.value} Kbps link`),
-    metric("Jitter", `${ui.jitterInput.value} ms`, "randomized queue delay"),
-  ].join("");
-}
-
-function metric(label, value, note) {
-  return `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)} - ${escapeHtml(note)}</span></div>`;
+  ui.metricsView.innerHTML = renderLinkMetrics({
+    transcript: state.transcript,
+    metadata: state.lastMetadata,
+    binaryBytes: last.bytes ?? 0,
+    speechMs: state.lastInputWasVoice ? state.lastSpeechMs : 0,
+    bandwidthKbps: Number(ui.bandwidthInput.value),
+    jitterMs: Number(ui.jitterInput.value),
+  });
 }
 
 function addEvent(text) {
