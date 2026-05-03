@@ -38,8 +38,14 @@ def background_events(payload):
 
 
 class SimulationApiContractTest(unittest.TestCase):
+    """Tests run against the coordinated_intrusion scenario explicitly."""
+
     def setUp(self):
         self.client = TestClient(app)
+        self.client.post(
+            "/scenario/select",
+            json={"scenario_id": "coordinated_intrusion"},
+        )
         self.client.post("/reset")
 
     def test_state_shape_contains_frontend_contract(self):

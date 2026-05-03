@@ -17,9 +17,9 @@ from app.voice.salute_extractor import build_voice_report
 
 
 DEFAULT_SCENARIO = {
-    "id": "coordinated_intrusion",
-    "name": "Coordinated Intrusion",
-    "description": "Cyber, physical, and OSINT indicators converge into a coordinated intrusion pattern.",
+    "id": "raven_gap",
+    "name": "Raven Gap",
+    "description": "TacNet Edge platoon movement under EW degradation.",
 }
 
 

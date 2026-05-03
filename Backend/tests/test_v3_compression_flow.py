@@ -19,12 +19,21 @@ def test_v3_compression_switch_flow():
     assert response.status_code == 200
     state = response.json()
 
+    # Comms starts non-degraded; user toggles degraded during the demo.
+    comms = state["comms"]
+    assert comms["degraded"] is False
+    assert comms["compression_enabled"] is False
+    assert state["voice_report"]["status"] == "ready"
+
+    # Toggle degraded mode ON — simulates the operator enabling EW degradation.
+    response = client.post("/comms/degrade", json={"degraded": True})
+    assert response.status_code == 200
+    state = response.json()
     comms = state["comms"]
     assert comms["degraded"] is True
     assert comms["kbps"] == 3
     assert comms["budget_bytes"] == 3750
     assert comms["compression_enabled"] is False
-    assert state["voice_report"]["status"] == "ready"
 
     response = client.post("/voice/report", json={"audio_id": "raven_gap_salute_1"})
     assert response.status_code == 200

@@ -18,7 +18,7 @@ from typing import Any
 
 
 ScenarioId = str
-DEFAULT_SCENARIO_ID = "coordinated_intrusion"
+DEFAULT_SCENARIO_ID = "raven_gap"
 
 
 def event(
