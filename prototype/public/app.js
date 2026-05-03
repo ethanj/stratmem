@@ -5,7 +5,7 @@
  * WebRTC transport, receiver decode, S2 rendering, TTS, and live metrics.
  */
 import { decodeFrame, encodeFrame, fnv1a, toHex } from "./codec.js?v=peer-diagnostics-20260503";
-import { compactMetadata, expandMetadata, extractMetadata, reconstructText, samples, validateMetadata } from "./metadata.js?v=peer-diagnostics-20260503";
+import { compactMetadata, expandMetadata, extractMetadata, reconstructText, samples, validateMetadata } from "./metadata.js?v=free-text-fallback-20260503";
 import { createId } from "./ids.js?v=uuid-fallback-20260503";
 import { PeerLink } from "./link.js?v=uuid-fallback-20260503";
 import { OfflineWhisperTranscriber } from "./stt.js?v=peer-diagnostics-20260503";

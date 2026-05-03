@@ -16,6 +16,7 @@ const FIELD_KEYS = {
   timestamp: 9,
   confidence: 10,
   source_transcript_id: 11,
+  raw_transcript: 12,
 };
 
 const REPORT_CODES = {
@@ -46,12 +47,13 @@ export function extractMetadata(transcript) {
   const reportType = classifyReport(lower);
   const status = extractStatus(lower);
   const request = extractRequest(lower, reportType);
+  const location = extractLocation(clean);
 
   return {
     report_type: reportType,
     speaker: extractSpeaker(clean),
     unit: extractUnit(clean),
-    location: extractLocation(clean),
+    location,
     status,
     request,
     destination: extractDestination(clean),
@@ -59,6 +61,7 @@ export function extractMetadata(transcript) {
     timestamp: new Date().toISOString(),
     confidence: inferConfidence(clean, reportType),
     source_transcript_id: `tx_${Date.now().toString(36)}`,
+    raw_transcript: shouldPreserveRawTranscript(clean, reportType, location, status, request) ? clean : "",
   };
 }
 
@@ -87,6 +90,10 @@ export function expandMetadata(compact) {
 }
 
 export function reconstructText(metadata) {
+  if (metadata.raw_transcript) {
+    return metadata.raw_transcript;
+  }
+
   const subject = metadata.speaker || metadata.unit || "Unknown element";
   const location = metadata.location ? ` at ${metadata.location}` : "";
   const status = Array.isArray(metadata.status) && metadata.status.length > 0
@@ -196,6 +203,12 @@ function inferConfidence(text, reportType) {
   if (extractLocation(text)) score += 15;
   if (extractStatus(text.toLowerCase()).length > 0) score += 10;
   return Math.min(score, 95);
+}
+
+function shouldPreserveRawTranscript(clean, reportType, location, status, request) {
+  if (!clean) return false;
+  if (reportType === "free_text") return true;
+  return !location && status.length === 0 && !request;
 }
 
 function encodeKnownValue(key, value) {
