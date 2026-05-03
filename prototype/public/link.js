@@ -109,7 +109,11 @@ export class PeerLink extends EventTarget {
 
   async handleSignal(message) {
     if (message.kind === "offer" && this.role === "receiver") {
-      if (this.sessionId && message.session_id !== this.sessionId) return;
+      if (this.sessionId && message.session_id !== this.sessionId && this.pc.connectionState === "connected") return;
+      if (this.sessionId && message.session_id !== this.sessionId) {
+        this.remotePendingCandidates = [];
+        this.emit("signal", { message: "Accepting replacement offer" });
+      }
       this.sessionId = String(message.session_id ?? "");
       this.emit("signal", { message: "Received offer" });
       await this.pc.setRemoteDescription(message.payload);
@@ -191,6 +195,9 @@ export class PeerLink extends EventTarget {
   isStaleSignal(message) {
     if (this.role === "receiver" && !this.sessionId) {
       return message.kind !== "offer";
+    }
+    if (this.role === "receiver" && message.kind === "offer") {
+      return false;
     }
     return !this.isCurrentSession(message);
   }

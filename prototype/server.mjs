@@ -325,6 +325,15 @@ async function serveStatic(req, res, url) {
   try {
     const file = await readFile(filePath);
     const contentType = mimeTypes.get(extname(filePath)) ?? "application/octet-stream";
+    if (requested === "/index.html") {
+      await writeLiveLog({
+        source: "server",
+        event: "page_load",
+        remote: req.socket.remoteAddress,
+        host: req.headers.host ?? "",
+        user_agent: req.headers["user-agent"] ?? "",
+      });
+    }
     res.writeHead(200, { "content-type": contentType });
     res.end(file);
   } catch {
