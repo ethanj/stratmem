@@ -4,6 +4,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .degraded-toggle-row {
@@ -75,14 +77,17 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 2px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .degraded-meter-row {
   display: grid;
-  grid-template-columns: 64px 80px 40px 80px;
+  grid-template-columns: minmax(56px, auto) minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 4px;
   align-items: center;
   font-size: 10px;
+  min-width: 0;
 }
 
 .degraded-meter-label {
@@ -95,6 +100,10 @@
 .degraded-meter-value {
   font-variant-numeric: tabular-nums;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .degraded-meter-vs {
@@ -122,6 +131,18 @@
   font-size: 9px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .degraded-meter-row {
+    grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto;
+    font-size: 9px;
+  }
+  .degraded-meter-budget { display: none; }
 }
 
 .degraded-meter-ratio {
