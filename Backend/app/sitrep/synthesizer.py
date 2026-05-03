@@ -124,10 +124,40 @@ def severity_for_risk(active_risk: float) -> str:
 
 def commander_summary(compactions: list[dict[str, Any]]) -> str:
     """Build the top-line commander SITREP summary."""
-    if any("contact" in compaction.get("tags", []) for compaction in compactions):
+    if has_contact_indicators(compactions):
         return "Commander SITREP: NAI-2 contact likely; movement continues slow west of PL Raven."
 
-    return "Commander SITREP: Raven Gap movement in progress; no confirmed contact."
+    return "Commander SITREP: Raven Gap movement in progress; contact not yet confirmed."
+
+
+def has_contact_indicators(compactions: list[dict[str, Any]]) -> bool:
+    """Return whether rollups contain contact-oriented Raven Gap evidence."""
+    contact_tags = {"contact", "salute", "sensor", "uas", "sitrep_seed"}
+    contact_terms = (
+        "contact",
+        "confirmed",
+        "dismount",
+        "nai",
+        "sensor trigger",
+        "trigger",
+        "uas",
+        "observation",
+        "observes",
+    )
+
+    for compaction in compactions:
+        if compaction.get("status") == "red" or compaction.get("severity") == "high":
+            return True
+
+        tags = {str(tag).lower() for tag in compaction.get("tags", [])}
+        text = " ".join(
+            str(compaction.get(key, ""))
+            for key in ("summary", "title", "unit")
+        ).lower()
+        if tags & contact_tags or any(term in text for term in contact_terms):
+            return True
+
+    return False
 
 
 def commander_narrative(compactions: list[dict[str, Any]]) -> str:

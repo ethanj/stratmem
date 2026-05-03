@@ -1,8 +1,8 @@
 """Deterministic squad-level rollups for the Raven Gap demo.
 
 The compaction layer does not call an LLM or add detection rules. It groups
-structured physical-domain Raven Gap source reports by `metadata.sender_id` and
-emits commander-readable summaries. Each summary carries provenance and the same
+structured physical-domain Raven Gap source reports by derived tactical group
+and emits commander-readable summaries. Each summary carries provenance and the same
 deterministic 3 Kbps proof fields used by `/state.comms`.
 """
 
@@ -12,6 +12,15 @@ import json
 from typing import Any
 
 from app.state.store import build_comms_proof
+
+
+GROUP_LABELS = {
+    "1st_squad": "1st Squad",
+    "2nd_squad": "2nd Squad",
+    "3rd_squad": "3rd Squad",
+    "support": "Weapons / Mobility Support",
+    "recon_command": "Recon / Command",
+}
 
 
 def build_squad_rollups(
@@ -29,15 +38,15 @@ def build_squad_rollups(
     """
     grouped = group_raven_gap_events(events)
     return [
-        build_rollup(sender_id, sender_events, comms)
-        for sender_id, sender_events in grouped.items()
+        build_rollup(group_id, group_events, comms)
+        for group_id, group_events in grouped.items()
     ]
 
 
 def group_raven_gap_events(
     events: list[dict[str, Any]],
 ) -> dict[str, list[dict[str, Any]]]:
-    """Group Raven Gap events by the sender ID stored in metadata."""
+    """Group Raven Gap events by derived squad/support identity."""
     grouped: dict[str, list[dict[str, Any]]] = {}
 
     for event in events:
@@ -45,35 +54,40 @@ def group_raven_gap_events(
         if metadata.get("scenario") != "raven_gap":
             continue
 
-        sender_id = metadata.get("sender_id")
-        if sender_id:
-            grouped.setdefault(sender_id, []).append(event)
+        group_id = derived_group_id(event)
+        if group_id:
+            grouped.setdefault(group_id, []).append(event)
 
     return grouped
 
 
 def build_rollup(
-    sender_id: str,
+    group_id: str,
     events: list[dict[str, Any]],
     comms: dict[str, Any] | None,
 ) -> dict[str, Any]:
     """Build one rollup with source provenance and byte proof."""
     sorted_events = sorted(events, key=event_sequence)
-    summary = rollup_summary(sorted_events, degraded=bool((comms or {}).get("degraded")))
+    label = group_label(group_id, sorted_events)
+    summary = rollup_summary(
+        group_id,
+        sorted_events,
+        degraded=bool((comms or {}).get("degraded")),
+    )
     raw_bytes = byte_count(source_report_envelopes(sorted_events))
-    compacted_payload = compacted_wire_payload(sender_id, summary, sorted_events)
+    compacted_payload = compacted_wire_payload(group_id, summary, sorted_events)
     compacted_bytes = byte_count(compacted_payload)
     proof = build_comms_proof(raw_bytes, compacted_bytes, (comms or {}).get("kbps"))
     t_compacted_sec = max(t_offset(event) for event in sorted_events)
 
     return {
-        "id": f"comp_{safe_id(sender_id)}_t{t_compacted_sec}",
-        "squad_id": sender_id,
+        "id": f"comp_{safe_id(group_id)}_t{t_compacted_sec}",
+        "squad_id": group_id,
         "summary": summary,
         "source_event_ids": [event.get("id") for event in sorted_events],
         "t_compacted_sec": t_compacted_sec,
-        "unit": unit_label(sorted_events),
-        "title": unit_label(sorted_events),
+        "unit": label,
+        "title": label,
         "status": rollup_status(sorted_events),
         "tags": rollup_tags(sorted_events),
         "source_count": len(sorted_events),
@@ -86,13 +100,13 @@ def build_rollup(
 
 
 def compacted_wire_payload(
-    sender_id: str,
+    group_id: str,
     summary: str,
     events: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Return the compact form that would traverse the degraded link."""
     return {
-        "squad_id": sender_id,
+        "squad_id": group_id,
         "summary": summary,
         "source_count": len(events),
         "source_event_ids": [event.get("id") for event in events],
@@ -108,9 +122,9 @@ def source_report_envelopes(events: list[dict[str, Any]]) -> list[dict[str, Any]
     ]
 
 
-def rollup_summary(events: list[dict[str, Any]], degraded: bool) -> str:
+def rollup_summary(group_id: str, events: list[dict[str, Any]], degraded: bool) -> str:
     """Build a deterministic full or reduced summary for one sender."""
-    label = unit_label(events)
+    label = group_label(group_id, events)
     types = "/".join(sorted({event.get("metadata", {}).get("report_type", "REPORT") for event in events}))
 
     if degraded:
@@ -120,10 +134,39 @@ def rollup_summary(events: list[dict[str, Any]], degraded: bool) -> str:
     return f"{label}: {messages}"
 
 
-def unit_label(events: list[dict[str, Any]]) -> str:
-    """Return the sender display label for a rollup."""
-    metadata = events[-1].get("metadata", {})
-    return metadata.get("unit_label") or events[-1].get("source", "Unknown")
+def derived_group_id(event: dict[str, Any]) -> str:
+    """Derive a squad/support group from mesh metadata and callsign."""
+    metadata = event.get("metadata", {})
+    mesh_node = str(metadata.get("mesh_node") or "").upper()
+    source = str(event.get("source") or "").upper()
+    sender_id = str(metadata.get("sender_id") or "")
+    report_type = str(metadata.get("report_type") or "").lower()
+
+    if mesh_node == "SQD-1" or source.startswith("1/"):
+        return "1st_squad"
+    if mesh_node == "SQD-2" or source.startswith("2/"):
+        return "2nd_squad"
+    if mesh_node == "SQD-3" or source.startswith("3/"):
+        return "3rd_squad"
+    if mesh_node in {"WPN", "JLTV-1"} or source in {"WPN", "JLTV-1"}:
+        return "support"
+    if (
+        mesh_node in {"UAS-2", "SENS-1", "PLT", "PL"}
+        or source in {"RQ-11", "OP-7", "PL"}
+        or report_type in {"uas", "sensor", "sitrep_seed"}
+    ):
+        return "recon_command"
+
+    return safe_id(sender_id or source or "unknown")
+
+
+def group_label(group_id: str, events: list[dict[str, Any]]) -> str:
+    """Return a stable display label for a derived compaction group."""
+    if group_id in GROUP_LABELS:
+        return GROUP_LABELS[group_id]
+
+    metadata = events[-1].get("metadata", {}) if events else {}
+    return metadata.get("unit_label") or group_id.replace("_", " ").title()
 
 
 def rollup_status(events: list[dict[str, Any]]) -> str:

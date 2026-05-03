@@ -187,7 +187,7 @@ def build_contact_markers(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Build contact and sensor markers from Raven Gap reports."""
     markers = []
     for event in events:
-        report_type = event.get("metadata", {}).get("report_type")
+        report_type = normalized_report_type(event)
         if report_type not in {"SALUTE", "SENSOR", "UAS", "SITREP_SEED"}:
             continue
 
@@ -213,6 +213,11 @@ def contact_marker(
         "source_event_id": event.get("id"),
         "message": event.get("message"),
     }
+
+
+def normalized_report_type(event: dict[str, Any]) -> str:
+    """Return Raven Gap report type with tolerant casing."""
+    return str(event.get("metadata", {}).get("report_type", "")).upper()
 
 
 def build_risk_zones(

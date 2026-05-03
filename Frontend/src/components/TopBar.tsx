@@ -4,7 +4,7 @@ import "../styles/topbar.css";
 
 type MaybePromise<T = void> = T | Promise<T>;
 
-export type ScenarioOption = {
+ type ScenarioOption = {
   id: string;
   name: string;
   description?: string;

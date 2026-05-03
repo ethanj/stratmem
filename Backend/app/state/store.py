@@ -26,6 +26,21 @@ DEFAULT_SCENARIO = {
 DEGRADED_COMMS_KBPS = 3
 COMMS_WINDOW_SECONDS = 10
 
+DOCUMENTED_MESH_ROOT = {"id": "PL", "label": "Platoon Leader"}
+DOCUMENTED_MESH_EDGES = [
+    {"parent": "PL", "child": "1st_squad"},
+    {"parent": "1st_squad", "child": "1st_squad_team_a"},
+    {"parent": "1st_squad", "child": "1st_squad_team_b"},
+    {"parent": "PL", "child": "2nd_squad"},
+    {"parent": "2nd_squad", "child": "2nd_squad_team_a"},
+    {"parent": "2nd_squad", "child": "2nd_squad_team_b"},
+    {"parent": "PL", "child": "3rd_squad"},
+    {"parent": "3rd_squad", "child": "3rd_squad_team_a"},
+    {"parent": "PL", "child": "weapons_squad"},
+    {"parent": "PL", "child": "recon_support"},
+    {"parent": "PL", "child": "mobility_support"},
+]
+
 
 def build_empty_correlation() -> dict[str, Any]:
     """Build the empty correlation payload expected by existing clients."""
@@ -71,7 +86,9 @@ def build_default_mesh() -> dict[str, Any]:
     """Build the static TacNet command-tree mesh for Raven Gap."""
     return {
         "id": "raven-gap-mesh",
-        "root": "PLT",
+        "root": deepcopy(DOCUMENTED_MESH_ROOT),
+        "edges": deepcopy(DOCUMENTED_MESH_EDGES),
+        "legacy_root": "PLT",
         "nodes": [
             {"id": "PLT", "label": "PL Raven", "role": "commander", "echelon": "platoon"},
             {"id": "SQD-1", "label": "1st Squad", "role": "rifle_squad", "parent": "PLT"},
@@ -212,6 +229,19 @@ def _merge_comms(comms: Optional[dict[str, Any]]) -> dict[str, Any]:
     return merged
 
 
+def _merge_mesh(mesh: Optional[dict[str, Any]]) -> dict[str, Any]:
+    """Ensure documented root/edges while preserving legacy nodes/links."""
+    merged = build_default_mesh()
+    if mesh:
+        for key, value in deepcopy(mesh).items():
+            if key not in {"root", "edges"}:
+                merged[key] = value
+
+    merged["root"] = deepcopy(DOCUMENTED_MESH_ROOT)
+    merged["edges"] = deepcopy((mesh or {}).get("edges") or DOCUMENTED_MESH_EDGES)
+    return merged
+
+
 class StateStore:
     """Tiny process-local store for the demo server."""
 
@@ -339,7 +369,7 @@ class StateStore:
 
     def _ensure_contract_fields(self) -> None:
         self._state.setdefault("map_state", build_empty_map_state())
-        self._state.setdefault("mesh", build_default_mesh())
+        self._state["mesh"] = _merge_mesh(self._state.get("mesh"))
         self._state.setdefault("compactions", [])
         self._state.setdefault("sitrep_delta", build_empty_sitrep_delta())
         self._state.setdefault("voice_report", build_voice_report())
