@@ -1,7 +1,7 @@
 # Team — B. Domain Content + Pitch Lead (TacNet creator)
 
 **Role:** Scenario realism + stage delivery. You built the original TacNet/MeshNode and you're doctrine-fluent; the team needs that voice in the demo and the pitch.
-**Cross-cutting reference:** `docs/we-have-four-team-implementation-plan.md` (full team plan, all roles)
+**Cross-cutting reference:** `docs/THEPLAN.md` (full team plan, all roles)
 **Pitch script (your working artifact):** `docs/branch-b-sentinel-forge-demo-script.md`
 **Branch lock:** Locked at Hour 1. Do not switch implementation paths mid-build.
 

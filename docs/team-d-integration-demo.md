@@ -2,7 +2,7 @@
 
 **Role:** Frontend integrator — Dashboard layout, MapView retarget, evidence-drawer wiring, static fallback, demo-day machine.
 **Build shell:** `../sentinel-forge/`
-**Cross-cutting reference:** `docs/we-have-four-team-implementation-plan.md` (full team plan, all roles)
+**Cross-cutting reference:** `docs/THEPLAN.md` (full team plan, all roles)
 **Pitch script:** `docs/branch-b-sentinel-forge-demo-script.md`
 **Branch lock:** Locked at Hour 1. Do not switch implementation paths mid-build.
 

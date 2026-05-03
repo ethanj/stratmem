@@ -2,7 +2,7 @@
 
 **Role:** Backend critical path. You built Sentinel Forge; everyone else's work depends on your data shapes.
 **Build shell:** `../sentinel-forge/`
-**Cross-cutting reference:** `docs/we-have-four-team-implementation-plan.md` (full team plan, all roles, mandatory syncs)
+**Cross-cutting reference:** `docs/THEPLAN.md` (full team plan, all roles, mandatory syncs)
 **Pitch script:** `docs/branch-b-sentinel-forge-demo-script.md`
 **Branch lock:** Locked at Hour 1. Do not switch implementation paths mid-build.
 
