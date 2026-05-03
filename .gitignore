@@ -65,3 +65,7 @@ htmlcov/
 ############################
 *.swp
 *.swo
+# Virtual environments
+.venv/
+Backend/.venv/
+Frontend/node_modules/

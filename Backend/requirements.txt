@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-pytest
+python-dotenv
 httpx
 openai
-python-dotenv
+pytest
