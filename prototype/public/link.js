@@ -11,7 +11,6 @@ export class PeerLink extends EventTarget {
     this.role = role;
     this.clientId = crypto.randomUUID();
     this.sessionId = role === "sender" ? crypto.randomUUID() : "";
-    this.signalingStartedAt = Date.now();
     this.lastSignalId = 0;
     this.channel = null;
     this.pc = new RTCPeerConnection({
@@ -26,6 +25,9 @@ export class PeerLink extends EventTarget {
   }
 
   async connect() {
+    this.pc.onconnectionstatechange = () => this.emitPeerState();
+    this.pc.oniceconnectionstatechange = () => this.emitPeerState();
+    this.pc.onicegatheringstatechange = () => this.emitPeerState();
     this.pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
         this.queueLocalCandidate(candidate);
@@ -39,6 +41,7 @@ export class PeerLink extends EventTarget {
       const offer = await this.pc.createOffer();
       await this.pc.setLocalDescription(offer);
       await this.sendSignal("offer", offer);
+      this.emit("signal", { message: "Sent offer" });
       this.canSendCandidates = true;
       await this.flushLocalCandidates();
     } else {
@@ -108,16 +111,19 @@ export class PeerLink extends EventTarget {
     if (message.kind === "offer" && this.role === "receiver") {
       if (this.sessionId && message.session_id !== this.sessionId) return;
       this.sessionId = String(message.session_id ?? "");
+      this.emit("signal", { message: "Received offer" });
       await this.pc.setRemoteDescription(message.payload);
       await this.flushRemoteCandidates();
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
       await this.sendSignal("answer", answer);
+      this.emit("signal", { message: "Sent answer" });
       this.canSendCandidates = true;
       await this.flushLocalCandidates();
     }
     if (message.kind === "answer" && this.role === "sender") {
       if (!this.isCurrentSession(message)) return;
+      this.emit("signal", { message: "Received answer" });
       await this.pc.setRemoteDescription(message.payload);
       await this.flushRemoteCandidates();
     }
@@ -183,15 +189,19 @@ export class PeerLink extends EventTarget {
   }
 
   isStaleSignal(message) {
-    const ageBufferMs = 30000;
-    const createdAt = Number(message.created_at ?? 0);
-    if (createdAt && createdAt < this.signalingStartedAt - ageBufferMs) {
-      return true;
-    }
     if (this.role === "receiver" && !this.sessionId) {
       return message.kind !== "offer";
     }
     return !this.isCurrentSession(message);
+  }
+
+  emitPeerState() {
+    this.emit("state", {
+      connectionState: this.pc.connectionState,
+      iceConnectionState: this.pc.iceConnectionState,
+      iceGatheringState: this.pc.iceGatheringState,
+      signalingState: this.pc.signalingState,
+    });
   }
 
   emit(name, detail) {

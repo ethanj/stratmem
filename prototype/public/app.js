@@ -129,6 +129,14 @@ function wirePeer(peer) {
   peer.addEventListener("closed", () => {
     ui.peerStatus.textContent = "Peer: closed";
   });
+  peer.addEventListener("signal", ({ detail }) => {
+    addEvent(`Signal: ${detail.message}`);
+  });
+  peer.addEventListener("state", ({ detail }) => {
+    const stateLabel = `${detail.connectionState}/${detail.iceConnectionState}`;
+    ui.peerStatus.textContent = `Peer: ${stateLabel}`;
+    addEvent(`Peer state: ${stateLabel}`);
+  });
   peer.addEventListener("error", ({ detail }) => {
     ui.peerStatus.textContent = "Peer: error";
     addEvent(`Peer error: ${detail.message}`);
