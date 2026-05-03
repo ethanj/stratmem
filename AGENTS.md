@@ -92,6 +92,10 @@ There is currently no `npm test` in `Frontend/package.json` and no JS test runne
 
 ## General Rules
 
-- First think through the problem and read the relevant files before changing code.
-- Make every change as simple as possible. Touch as little code as you can.
-- Never speculate about code you have not opened. If the user references a specific file, read it before answering.
+- First think through the problem, read the codebase for relevant files.
+- Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+- Never speculate about code you have not opened. If the user references a specific file, you MUST read the file before answering. Make sure to investigate and read relevant files BEFORE answering questions about the codebase. Never make any claims about code before investigating unless you are certain of the correct answer - give grounded and hallucination-free answers.
+
+## hackathon adjustments
+
+- this is greenfield and focused on demo so implementation speed takes priority over perfection. the 400 line and 40 line rules should be considered soft.

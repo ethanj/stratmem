@@ -1,5 +1,3 @@
-localdocs/
-
 # macOS / OS files
 .DS_Store
 ._*
@@ -25,6 +23,12 @@ Thumbs.db
 
 # Personal notes
 James_notes/
+
+# Local-only docs
+localdocs/
+
+# fallow tool artifacts
+.fallow/
 
 # Python
 __pycache__/
