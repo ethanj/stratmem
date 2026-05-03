@@ -9,6 +9,11 @@ import { compactMetadata, expandMetadata, extractMetadata, reconstructText, samp
 import { PeerLink } from "./link.js";
 import { OfflineWhisperTranscriber } from "./stt.js";
 
+const frameTypes = {
+  metadata: 1,
+  deviceDead: 2,
+};
+
 const state = {
   peer: null,
   stt: null,
@@ -27,7 +32,7 @@ const ui = Object.fromEntries(
     "jitterInput", "jitterLabel", "talkButton", "manualTranscript",
     "sendTranscript", "transcriptView", "metadataView", "binaryView",
     "metricsView", "timelineView", "receiverMetadata", "receiverSummary",
-    "speakLast",
+    "speakLast", "killSwitch", "deviceStatus",
   ].map((id) => [id, document.getElementById(id)]),
 );
 
@@ -57,6 +62,7 @@ function bindControls() {
   ui.connectPeer.addEventListener("click", connectPeer);
   ui.connectStt.addEventListener("click", connectStt);
   ui.sendTranscript.addEventListener("click", () => processTranscript(ui.manualTranscript.value));
+  ui.killSwitch.addEventListener("click", sendKillSwitch);
   ui.speakLast.addEventListener("click", () => speak(state.lastSummary));
   ui.talkButton.addEventListener("pointerdown", startTalk);
   ui.talkButton.addEventListener("pointerup", stopTalk);
@@ -220,17 +226,57 @@ async function sendMetadata(metadata) {
     2: new Date().toISOString(),
     3: compact,
     4: checksum,
+    5: frameTypes.metadata,
   };
   const bytes = encodeFrame(frame);
   ui.binaryView.textContent = `${bytes.length} bytes\n${toHex(bytes)}`;
   renderMetrics({ bytes: bytes.length, metadata });
-  if (state.peer) {
-    await state.peer.sendFrame(bytes, metadata);
+  await transmitFrame(bytes, metadata);
+}
+
+async function sendKillSwitch() {
+  const payload = {
+    1: "device_dead",
+    2: "sender",
+    3: new Date().toISOString(),
+    4: "Source device marked dead by operator.",
+  };
+  const checksum = fnv1a(JSON.stringify(payload));
+  const frame = {
+    0: 1,
+    1: ++state.sequence,
+    2: payload[3],
+    4: checksum,
+    5: frameTypes.deviceDead,
+    6: payload,
+  };
+  const bytes = encodeFrame(frame);
+  ui.metadataView.textContent = JSON.stringify({ control: "device_dead", payload }, null, 2);
+  ui.binaryView.textContent = `${bytes.length} bytes\n${toHex(bytes)}`;
+  renderMetrics({ bytes: bytes.length });
+  addEvent("Kill switch control frame built");
+  await transmitFrame(bytes, payload);
+}
+
+async function transmitFrame(bytes, detail) {
+  if (!state.peer) {
+    addEvent("Peer not connected; frame stayed local");
+    return;
+  }
+  try {
+    await state.peer.sendFrame(bytes, detail);
+  } catch (error) {
+    addEvent(`Send failed: ${error.message}`);
   }
 }
 
 function receiveFrame(bytes, receivedAt) {
   const frame = decodeFrame(bytes);
+  const frameType = frame[5] ?? frameTypes.metadata;
+  if (frameType === frameTypes.deviceDead) {
+    receiveKillSwitchFrame(frame, bytes, receivedAt);
+    return;
+  }
   const compact = frame[3];
   const checksum = frame[4];
   const verified = checksum === fnv1a(JSON.stringify(compact));
@@ -239,7 +285,22 @@ function receiveFrame(bytes, receivedAt) {
   state.lastSummary = summary;
   ui.receiverMetadata.textContent = JSON.stringify({ verified, frame, metadata }, null, 2);
   ui.receiverSummary.textContent = summary;
+  ui.deviceStatus.textContent = "Source device: alive";
+  ui.deviceStatus.classList.remove("dead");
   addEvent(`Received ${bytes.length} bytes`);
+  renderMetrics({ bytes: bytes.length, receivedAt });
+}
+
+function receiveKillSwitchFrame(frame, bytes, receivedAt) {
+  const payload = frame[6] ?? {};
+  const verified = frame[4] === fnv1a(JSON.stringify(payload));
+  const summary = "SOURCE DEVICE DEAD. Treat sender as offline.";
+  state.lastSummary = summary;
+  ui.receiverMetadata.textContent = JSON.stringify({ verified, frame, payload }, null, 2);
+  ui.receiverSummary.textContent = summary;
+  ui.deviceStatus.textContent = "Source device: DEAD";
+  ui.deviceStatus.classList.add("dead");
+  addEvent(`Received kill switch ${bytes.length} bytes`);
   renderMetrics({ bytes: bytes.length, receivedAt });
 }
 

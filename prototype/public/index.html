@@ -56,6 +56,7 @@
             <button data-sample="salute">Sample SALUTE</button>
             <button data-sample="casevac">Sample CASEVAC</button>
             <button id="sendTranscript">Extract + Send</button>
+            <button id="killSwitch" class="danger">Kill Switch</button>
           </div>
         </article>
 
@@ -82,6 +83,7 @@
 
         <article class="panel receiver-only">
           <h2>Receiver: S2 / Commander Picture</h2>
+          <div id="deviceStatus" class="device-status">Source device: alive</div>
           <pre id="receiverMetadata" class="output"></pre>
           <div id="receiverSummary" class="brief"></div>
           <button id="speakLast">Speak Last</button>

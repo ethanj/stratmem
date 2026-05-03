@@ -107,6 +107,8 @@ develop the code.
 7. Sender clicks `Connect Offline STT`.
 8. Sender holds `Hold to Talk`, speaks a short report, then releases.
 9. Receiver should see decoded metadata and reconstructed S2 text.
+10. Sender can click `Kill Switch` to send a control frame that marks the source
+    device dead on the receiver.
 
 Sample report:
 
@@ -123,6 +125,7 @@ Alpha Two at grid 12345678: sustainment issue: one casualty, low ammo. Request r
 ## What Is Transmitted
 
 The constrained peer link transmits the compact CBOR metadata frame.
+The kill switch transmits a compact CBOR control frame over the same peer link.
 
 It does not transmit:
 

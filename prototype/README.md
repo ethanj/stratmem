@@ -60,11 +60,18 @@ The STT endpoint accepts localhost requests only. Run the sender browser on
 
 ## What The Demo Shows
 
+- The microphone path is real when `Connect Offline STT` is used on the sender.
+- The sample buttons are fallback demo inputs for exercising the same metadata
+  and binary transport path without speaking.
 - Original transcript stays local and is not transmitted over the shaped link.
 - Metadata JSON is visible for debugging but is not transmitted.
 - CBOR bytes are transmitted through the WebRTC DataChannel.
 - The link defaults to 3 Kbps with jitter.
 - The receiver reconstructs S2/commander-readable text from decoded metadata.
+- `Audio estimate` is a comparison baseline, not transmitted audio.
+- `CBOR frame` is the actual encoded payload size sent over the peer link.
+- `Kill Switch` sends a CBOR control frame that marks the sender dead on the
+  receiver.
 - Browser TTS remains available with `Speak Last`, but text reconstruction is
   the P0 acceptance target.
 
