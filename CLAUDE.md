@@ -100,6 +100,55 @@ The hackathon scenario being built is **"Raven Gap"** (platoon under EW degradat
 
 The backend's default scenario is still `coordinated_intrusion` (cyber+drone+AIS); plans call for a `raven_gap` module under `app/scenarios/` (not yet created). The frontend already runs Raven Gap via its local engine (see "Frontend-only Raven Gap engine" above). Compaction text for each Raven Gap beat is **pre-baked, not LLM-generated** — keep it that way unless the user says otherwise.
 
+## Raven Gap reference
+
+*Added 2026-05-02.*
+
+Raven Gap is a **fictional tactical situation used as a demo fixture**, not a mission script. The "story" exists only as 12 event objects in `Frontend/src/services/ravenGapStub.ts:83-260` (`ravenGapEvents`). There is no prose narrative document — the array is the story. Progressive reveal lives in `Frontend/src/services/ravenGapEngine.ts` (`buildScenarioState(stepIndex, comms, status)`).
+
+**Replay cadence:** `AUTO_STEP_MS = 900` in `Frontend/src/hooks/useSimulation.ts:65`. ~11 seconds of real time replays ~60 seconds of in-world story. Event `timestamp` fields are narrative time only; not used for scheduling.
+
+**Conditional reveals (in `ravenGapEngine.ts`):** incident at step 8, sitrep_delta at step 10, NAI 1 contact confirmed at step 4, NAI 2 contact confirmed at step 9, total 12 steps.
+
+### Glossary (US Army doctrine — standard infantry vocabulary, not elite/SOF)
+
+Report formats: **SALUTE** (Size/Activity/Location/Unit/Time/Equipment) = contact report. **ACE** (Ammo/Casualties/Equipment) = status check. **LACE** = ACE plus Liquids. **PLI** (Position Location Information) = "I'm here." **SPOT** = informal sighting.
+
+Map vocabulary: **NAI** (Named Area of Interest) = pre-marked tripwire box. **MGRS** = grid coordinate format `11SLT 12450 67950` — `11S` is Grid Zone Designator, `LT` is 100km × 100km square ID, the two 5-digit groups are easting/northing in meters within that square. 5+5 digits = 1m precision; 4+4 = 10m; soldiers usually drop the GZD/square in-AO. **COP** = Common Operational Picture. **AO** = Area of Operations. **Phase Line** = coordination line. **Checkpoint** = route reference point.
+
+Units: **dismount** = soldier on foot. **UAS** = drone (in this scenario, **RQ-11** Raven). **OP/LP** = Observation Post / Listening Post (callsign **S7**). **JLTV** = Joint Light Tactical Vehicle (callsign **V1**). **PL** = Platoon Leader. **Technical** = improvised armed pickup truck.
+
+Status colors: green = good, amber = watch, red = critical.
+
+Comms: **EW** = Electronic Warfare. **SATCOM** = satellite comms (denied in scenario). **LoRa** = long-range low-bandwidth radio fallback (~0.3–37 kbps). **vic** = "in the vicinity of."
+
+Callsigns in fixture: `1/A`, `1/B` = 1st Squad fire teams Alpha/Bravo. `2/A`, `2/B` = 2nd Squad teams. `3/A` = 3rd Squad team. `RQ-11` = drone. `S7` = sensor. `V1` = JLTV. `PL` = platoon leader. `MESH` = network heartbeats (filtered out of feed via `metadata.background = true`).
+
+### Mission arc (12 reports)
+
+1. `rg_001` 1/A SALUTE — 1 dismount NAI 1, light pack
+2. `rg_002` 1/B ACE — green/zero/green
+3. `rg_003` RQ-11 SPOT — 2 dismounts NAI 2, moving NW
+4. `rg_004` 2/A SALUTE — 2 dismounts confirmed NAI 1, **armed**, 220m. *First hostile-shaped report.*
+5. `rg_005` PL MESH heartbeat *(background, filtered)*
+6. `rg_006` S7 trigger — motion at OP/LP picket line
+7. `rg_007` 2/B LACE — liquids amber
+8. `rg_008` V1 PLI — JLTV location/fuel/crew
+9. `rg_009` RQ-11 SPOT (high) — vehicle dust trail vic NAI 2, possible technical. *Escalation.*
+10. `rg_010` 3/A SALUTE — 3 dismounts NAI 3 dispersing, no contact
+11. `rg_011` PL MESH heartbeat *(background, filtered)*
+12. `rg_012` RQ-11 EW alert (high) — **drone link degraded, SATCOM denied, falling back to LoRa.** *Hero beat — pitch payoff.*
+
+### Where TacNet sits
+
+Standard military model: reports → S2/RTO/intel cell → SITREP → commander reads → updates COP. Human in the loop. TacNet's claim: reports → semantic compaction layer on the mesh → commander gets fused picture directly. The compaction layer replaces (or augments) the S2-first-pass.
+
+Component mapping in the dashboard: raw reports = `LogStream`. Squad-level rollup ("S2 first pass") = `CompactionTimeline`. Final commander SITREP = `IncidentCard` + `SitrepDeltaPanel`. Live battlespace picture (COP) = `MapView`. Bandwidth proof = `DegradedCommsToggle`. The map tracks ~10 **elements** (squads, vehicles, drones, sensors) — not individual soldiers.
+
+### Bandwidth math (the demo proof)
+
+Voice version of one SALUTE: ~10–15s audio, ~10–20 KB → over a 3 Kbps budget. Structured SALUTE JSON (one `rg_xxx` event): ~200 bytes → fits in one second of 3 Kbps link. Soldier still speaks the SALUTE; phone runs voice → SALUTE JSON locally; only ~200 bytes cross the mesh.
+
 ## Code Style & Standards
 
 - Files must be smaller than 400 lines excluding comments. Once 400 is exceeded, refactor.
