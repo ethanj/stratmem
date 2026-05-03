@@ -130,6 +130,26 @@ export interface RavenGapStateSlice {
   compactions?: Compaction[];
   sitrep_delta?: SitrepDelta;
   comms?: Comms;
+  receiver_events?: ReceiverDecodeEvent[];
+}
+
+export interface ReceiverDecodeEvent {
+  id: string;
+  room: string;
+  source: string;
+  received_at: string;
+  verified: boolean;
+  frame_type: string;
+  sequence?: number | null;
+  byte_count: number;
+  checksum?: number | null;
+  metadata: Record<string, unknown>;
+  reconstructed_text: string;
+  compression?: {
+    raw_audio_estimated_bytes: number;
+    binary_bytes: number;
+    ratio: number | null;
+  };
 }
 
 /**

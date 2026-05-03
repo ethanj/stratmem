@@ -13,8 +13,10 @@ import CompactionTimeline from "../components/CompactionTimeline";
 import SitrepDeltaPanel from "../components/SitrepDeltaPanel";
 import EvidenceDrawer from "../components/EvidenceDrawer";
 import VoiceReportPanel from "../components/VoiceReportPanel";
+import ReceiverDecodePanel from "../components/ReceiverDecodePanel";
 
 import { useSimulation } from "../hooks/useSimulation";
+import type { ReceiverDecodeEvent } from "../types/ravenGap";
 
 type FocusedSignal = {
   kind: string;
@@ -53,6 +55,7 @@ export default function Dashboard() {
   const [focusedSignal, setFocusedSignal] = useState<FocusedSignal>(null);
   const [drawerIds, setDrawerIds] = useState<string[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const receiverEvents = (state as { receiver_events?: ReceiverDecodeEvent[] }).receiver_events;
 
   const handleScenarioChange = async (scenarioId: string) => {
     setFocusedSignal(null);
@@ -159,6 +162,7 @@ export default function Dashboard() {
               onSubmit={submitVoiceReport}
               onCompressionChange={setCompressionEnabled}
             />
+            <ReceiverDecodePanel events={receiverEvents} />
             <AssetStatus assets={state.map_state?.assets} />
           </div>
         </section>

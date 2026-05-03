@@ -16,6 +16,11 @@ from pydantic import BaseModel
 
 from app.adapters.mock import MockAdapter
 from app.api.routes.agent import router as agent_router
+from app.api.routes.receiver import (
+    get_receiver_events,
+    reset_receiver_events,
+    router as receiver_router,
+)
 from app.core.pipeline import run_pipeline
 from app.core.scenario import (
     DEFAULT_SCENARIO_ID,
@@ -39,6 +44,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 app = FastAPI(title="Sentinel Forge API")
 app.include_router(agent_router)
+app.include_router(receiver_router)
 
 store = StateStore()
 
@@ -115,6 +121,7 @@ def select_scenario(payload: ScenarioSelectRequest):
 
     selected_scenario_id = payload.scenario_id
     reset_adapter()
+    reset_receiver_events()
 
     state = store.reset(scenario=current_scenario())
     state["meta"]["status"] = "idle"
@@ -126,6 +133,7 @@ def select_scenario(payload: ScenarioSelectRequest):
 @app.post("/simulate/start")
 def start_simulation():
     reset_adapter()
+    reset_receiver_events()
 
     state = store.reset(scenario=current_scenario())
     state["meta"]["status"] = "running"
@@ -180,6 +188,7 @@ def step_simulation():
 def get_state():
     state = store.get()
     state["scenario"] = current_scenario()
+    state["receiver_events"] = get_receiver_events()
     return state
 
 
@@ -212,6 +221,7 @@ def voice_report(payload: VoiceReportRequest):
 @app.post("/reset")
 def reset():
     reset_adapter()
+    reset_receiver_events()
     return store.reset(scenario=current_scenario())
 
 

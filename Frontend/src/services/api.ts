@@ -1,5 +1,6 @@
 // services/api.ts
 import { buildDegradedComms, ravenGapCommsFull } from "./ravenGapStub";
+import type { ReceiverDecodeEvent } from "../types/ravenGap";
 
 const BASE_URL = "http://localhost:8000";
 const DEFAULT_VOICE_AUDIO_ID = "raven_gap_salute_1";
@@ -158,6 +159,24 @@ export async function submitVoiceReport(audio_id = DEFAULT_VOICE_AUDIO_ID) {
 
   if (!res.ok) {
     throw new Error("Failed to submit voice report");
+  }
+
+  return res.json();
+}
+
+export async function decodeReceiverDemoFrame(): Promise<ReceiverDecodeEvent> {
+  const res = await fetch(`${BASE_URL}/api/receiver/decode`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      use_fixture: true,
+      room: "raven-gap",
+      source: "s2-dashboard",
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to decode receiver frame");
   }
 
   return res.json();
