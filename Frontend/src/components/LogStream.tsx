@@ -1,6 +1,6 @@
 // components/LogStream.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import "../styles/logstream.css";
+import "./LogStream.css";
 
 type FeedFilter = "all" | "ops" | "anomalies" | "threats" | "incidents";
 
@@ -42,6 +42,25 @@ function sourceType(source: string) {
   if (value.includes("FUSION")) return "FUSION";
 
   return "SYS";
+}
+
+/**
+ * Raven Gap: when `event.source` is a callsign-shaped string ("1/A", "RQ-11",
+ * "S7", "V1", "MESH", "PL", …) render it raw instead of collapsing it to "SYS".
+ * Falls back to sourceType() classification only if no source is set.
+ */
+function isCallsign(value: string): boolean {
+  if (!value) return false;
+  if (/^\d+\/[A-Z]$/.test(value)) return true; // 1/A, 2/B
+  if (/^[A-Z]{1,5}-?\d{1,3}$/.test(value)) return true; // RQ-11, V1, S7
+  if (/^(PL|MESH|HQ|QRF|TOC)$/.test(value)) return true;
+  return false;
+}
+
+function displaySource(event: { source?: string }): string {
+  const raw = String(event?.source || "");
+  if (isCallsign(raw)) return raw;
+  return sourceType(raw);
 }
 
 function eventTone(event: any) {
@@ -171,7 +190,11 @@ export default function LogStream({
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const orderedEvents = useMemo(() => {
-    return Array.isArray(events) ? events : [];
+    if (!Array.isArray(events)) return [];
+    // Raven Gap: filter telemetry pings out of the main feed so the
+    // source-report stream stays clean. Background events still appear in
+    // event count totals for downstream metrics.
+    return events.filter((evt) => evt?.metadata?.background !== true);
   }, [events]);
 
   const focusedIdSet = useMemo(() => {
@@ -254,7 +277,7 @@ export default function LogStream({
     <>
       <div className="panel event-stream-panel">
         <div className="panel-header">
-          <h2>EVENT STREAM</h2>
+          <h2>SOURCE REPORTS</h2>
 
           <label className="event-filter-control">
             <span>FILTER</span>
@@ -294,7 +317,8 @@ export default function LogStream({
             </div>
           ) : (
             filteredEvents.map((event: any) => {
-              const source = sourceType(event.source);
+              const source = displaySource(event);
+              const sourceClass = sourceType(event.source).toLowerCase();
               const tone = eventTone(event);
               const focused = focusedIdSet.has(event.id);
 
@@ -308,7 +332,7 @@ export default function LogStream({
                     "event-row",
                     event.domain || "unknown",
                     tone,
-                    `source-${source.toLowerCase()}`,
+                    `source-${sourceClass}`,
                     focused ? "focused" : "",
                   ].join(" ")}
                 >
@@ -318,7 +342,7 @@ export default function LogStream({
                     {formatTime(event.timestamp)}
                   </span>
 
-                  <span className={`source-pill ${source.toLowerCase()}`}>
+                  <span className={`source-pill ${sourceClass}`}>
                     {source}
                   </span>
 
@@ -353,9 +377,9 @@ export default function LogStream({
           >
             <header className="log-modal-header">
               <div>
-                <h2>FULL EVENT LOG</h2>
+                <h2>FULL REPORT LOG</h2>
                 <span>
-                  {orderedEvents.length} EVENTS CAPTURED ·{" "}
+                  {orderedEvents.length} REPORTS CAPTURED ·{" "}
                   {filteredEvents.length} VISIBLE IN CURRENT FILTER
                 </span>
               </div>
@@ -396,7 +420,8 @@ export default function LogStream({
 
             <div className="log-modal-list">
               {filteredEvents.map((event: any) => {
-                const source = sourceType(event.source);
+                const source = displaySource(event);
+                const sourceClass = sourceType(event.source).toLowerCase();
                 const tone = eventTone(event);
                 const label = eventClassLabel(event);
                 const focused = focusedIdSet.has(event.id);
@@ -407,7 +432,7 @@ export default function LogStream({
                     className={[
                       "log-modal-row",
                       tone,
-                      `source-${source.toLowerCase()}`,
+                      `source-${sourceClass}`,
                       focused ? "focused" : "",
                     ].join(" ")}
                   >
@@ -415,7 +440,7 @@ export default function LogStream({
                       {formatTime(event.timestamp)}
                     </span>
 
-                    <span className={`source-pill ${source.toLowerCase()}`}>
+                    <span className={`source-pill ${sourceClass}`}>
                       {source}
                     </span>
 

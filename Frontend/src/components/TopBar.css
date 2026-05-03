@@ -1,0 +1,136 @@
+/* TopBar.css — Top bar, controls, status pills */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  background: var(--panel-header);
+  border-bottom: 1px solid var(--border);
+  height: 40px;
+  min-height: 40px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-mark {
+  font-size: 18px;
+  color: var(--green-bright);
+}
+
+.brand h1 {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--text-bright);
+  white-space: nowrap;
+}
+
+.brand p {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.topbar-controls {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.control-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--panel);
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.control-btn:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  background: var(--panel-header);
+}
+
+.control-btn.start.active {
+  border-color: var(--status-amber);
+  color: var(--amber);
+}
+
+.runtime-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--label);
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.live-dot.active {
+  background: var(--status-green);
+  animation: status-blink 1.2s ease-in-out infinite;
+}
+
+.runtime-clock {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.topbar-mock-pill {
+  font-size: 9px;
+  padding: 1px 4px;
+  border: 1px solid var(--amber-dim);
+  border-radius: 2px;
+  color: var(--amber);
+  letter-spacing: 0.06em;
+}
+
+.scenario-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.scenario-select {
+  font-size: 10px;
+  max-width: 140px;
+}
+
+.time-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.time-box strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.time-box small {
+  color: var(--muted);
+  font-size: 9px;
+}

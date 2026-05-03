@@ -1,6 +1,6 @@
 // components/CorrelationScore.tsx
 import { useMemo } from "react";
-import "../styles/correlation.css";
+import "./CorrelationScore.css";
 
 type CorrelationHistoryPoint = {
   timestamp: string;

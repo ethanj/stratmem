@@ -1,0 +1,67 @@
+/* AssetStatus.css — Asset rows, status indicators */
+
+.asset-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.asset-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+
+.asset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  font-size: 11px;
+  border-bottom: 1px solid transparent;
+}
+
+.asset-row:hover {
+  background: rgba(58, 90, 64, 0.06);
+}
+
+.asset-row span {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-row strong {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.asset-row strong.operational { color: var(--status-green); }
+.asset-row strong.streaming,
+.asset-row strong.live,
+.asset-row strong.active { color: var(--status-green); }
+.asset-row strong.standby { color: var(--muted); }
+.asset-row strong.suspect,
+.asset-row strong.alerting { color: var(--amber); }
+.asset-row strong.degraded { color: var(--status-amber); }
+.asset-row strong.offline { color: var(--red); }
+.asset-row strong.unknown { color: var(--muted); }
+
+/* Domain indicator (subtle left border) */
+.asset-row.alerting,
+.asset-row.suspect {
+  border-left: 2px solid var(--amber);
+}
+
+.asset-row.degraded {
+  border-left: 2px solid var(--status-amber);
+}
+
+.asset-row.offline {
+  border-left: 2px solid var(--red);
+}

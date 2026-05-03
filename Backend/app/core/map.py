@@ -311,12 +311,12 @@ def build_legacy_assets(
     """Build old asset rows for existing frontend components."""
     live = "streaming" if has_events else "operational"
     return [
-        {"name": "AUTH SERVER", "status": "suspect" if has_auth(signal_kinds) else live},
-        {"name": "EDR SENSOR NETWORK", "status": "alerting" if has_edr(signal_kinds) else live},
-        {"name": "NETWORK GATEWAY", "status": "alerting" if has_network(signal_kinds) else live},
-        {"name": "UAS MONITORING", "status": "alerting" if "physical.drone_recon" in signal_kinds else live},
-        {"name": "AIS MONITORING", "status": "alerting" if "osint.ais_anomaly" in signal_kinds else live},
-        {"name": "FUSION CORE", "status": "alerting" if signal_kinds else ("live" if has_events else "standby")},
+        {"id": "asset-auth", "name": "AUTH SERVER", "kind": "server", "domain": "cyber", "status": "suspect" if has_auth(signal_kinds) else live},
+        {"id": "asset-edr", "name": "EDR SENSOR NETWORK", "kind": "sensor", "domain": "cyber", "status": "alerting" if has_edr(signal_kinds) else live},
+        {"id": "asset-net-gw", "name": "NETWORK GATEWAY", "kind": "gateway", "domain": "cyber", "status": "alerting" if has_network(signal_kinds) else live},
+        {"id": "asset-uas", "name": "UAS MONITORING", "kind": "uas", "domain": "physical", "status": "alerting" if "physical.drone_recon" in signal_kinds else live},
+        {"id": "asset-ais", "name": "AIS MONITORING", "kind": "ais_feed", "domain": "osint", "status": "alerting" if "osint.ais_anomaly" in signal_kinds else live},
+        {"id": "asset-fusion", "name": "FUSION CORE", "kind": "fusion_engine", "domain": "fusion", "status": "alerting" if signal_kinds else ("live" if has_events else "standby")},
     ]
 
 

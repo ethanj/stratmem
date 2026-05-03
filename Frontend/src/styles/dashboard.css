@@ -11,28 +11,40 @@
 }
 
 /*
-  Desktop command-center layout.
-  Optimized for fullscreen / 16:9 hackathon demo.
+  Raven Gap command-center layout per docs/THEPLAN.md.
+  Topology: top mesh strip / left feed / center map / right SITREP rail
+  / bottom dock (signals + timeline + aside).
 */
-.dashboard-grid {
+.dashboard-grid.raven-gap {
   min-width: 0;
   min-height: 0;
   display: grid;
 
   grid-template-columns:
-    minmax(320px, 0.96fr)
-    minmax(370px, 1.12fr)
-    minmax(260px, 0.82fr)
-    minmax(260px, 0.82fr);
+    minmax(280px, 0.85fr)
+    minmax(420px, 1.5fr)
+    minmax(290px, 1fr);
 
-  grid-template-rows: minmax(0, 1.52fr) minmax(0, 0.72fr);
+  grid-template-rows:
+    minmax(120px, 0.16fr)
+    minmax(0, 1fr)
+    minmax(180px, 0.32fr);
 
   grid-template-areas:
-    "events signals righttop righttop"
-    "events map     map      assets";
+    "mesh    mesh     mesh"
+    "feed    map      sitrep"
+    "signals timeline aside";
 
   gap: 8px;
 }
+
+.mesh-area    { grid-area: mesh; }
+.feed-area    { grid-area: feed; }
+.map-area     { grid-area: map; }
+.sitrep-area  { grid-area: sitrep; }
+.signals-area { grid-area: signals; }
+.timeline-area{ grid-area: timeline; }
+.aside-area   { grid-area: aside; }
 
 .dashboard-area {
   min-width: 0;
@@ -40,33 +52,35 @@
   overflow: hidden;
 }
 
-.event-area {
-  grid-area: events;
+.dashboard-area > .panel {
+  width: 100%;
+  height: 100%;
 }
 
-.signal-area {
-  grid-area: signals;
-}
-
-.right-top-area {
-  grid-area: righttop;
+.aside-stack {
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  grid-template-rows: minmax(166px, 0.96fr) minmax(142px, 0.82fr);
   gap: 8px;
 }
 
-.map-area {
-  grid-area: map;
+.aside-stack > .panel {
+  width: 100%;
+  height: 100%;
 }
 
-.asset-area {
-  grid-area: assets;
+/* Right SITREP rail stacks IncidentCard above SitrepDeltaPanel. */
+.sitrep-area {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(140px, 0.36fr);
+  gap: 8px;
 }
 
-.dashboard-area > .panel,
-.right-top-area > .panel {
+.sitrep-area > .panel,
+.sitrep-area > * {
   width: 100%;
   height: 100%;
 }
@@ -110,14 +124,17 @@
     padding: 7px 9px;
   }
 
-  .dashboard-grid {
+  .dashboard-grid.raven-gap {
     gap: 7px;
-    grid-template-rows: minmax(0, 1.48fr) minmax(0, 0.68fr);
+    grid-template-rows: minmax(110px, 0.14fr) minmax(0, 1fr) minmax(160px, 0.30fr);
   }
 
-  .right-top-area {
+  .sitrep-area {
     gap: 7px;
-    grid-template-rows: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  }
+
+  .aside-stack {
+    gap: 7px;
   }
 
   .panel-header {
@@ -138,14 +155,17 @@
     padding: 6px 8px;
   }
 
-  .dashboard-grid {
+  .dashboard-grid.raven-gap {
     gap: 6px;
-    grid-template-rows: minmax(0, 1.45fr) minmax(0, 0.62fr);
+    grid-template-rows: minmax(100px, 0.12fr) minmax(0, 1fr) minmax(150px, 0.28fr);
   }
 
-  .right-top-area {
+  .sitrep-area {
     gap: 6px;
-    grid-template-rows: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  }
+
+  .aside-stack {
+    gap: 6px;
   }
 
   .panel-header {
@@ -159,7 +179,7 @@
   }
 }
 
-/* Narrow layout: only here do we allow page scroll. */
+/* Narrow layout: stack vertically. */
 @media (max-width: 980px) {
   .dashboard-shell {
     height: auto;
@@ -169,29 +189,39 @@
     overflow-y: visible;
   }
 
-  .dashboard-grid {
+  .dashboard-grid.raven-gap {
     min-width: 0;
     min-height: 0;
     grid-template-columns: 1fr;
     grid-template-rows: auto;
     grid-template-areas:
-      "righttop"
-      "events"
-      "signals"
+      "mesh"
+      "sitrep"
       "map"
-      "assets";
+      "feed"
+      "timeline"
+      "signals"
+      "aside";
     align-items: stretch;
   }
 
-  .right-top-area {
+  .sitrep-area {
     grid-template-rows: auto auto;
   }
 
-  .event-area,
-  .signal-area,
+  .aside-stack {
+    height: auto;
+    grid-template-rows: minmax(220px, auto) minmax(220px, auto);
+  }
+
+  .mesh-area,
+  .feed-area,
   .map-area,
-  .asset-area {
-    min-height: 320px;
+  .sitrep-area,
+  .signals-area,
+  .timeline-area,
+  .aside-area {
+    min-height: 240px;
   }
 
   .map-area {

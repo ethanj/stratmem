@@ -1,0 +1,75 @@
+/* MeshTree.css — Tree hierarchy, node states, pulse */
+
+.mesh-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mesh-panel.empty .mesh-empty {
+  padding: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.mesh-active-count {
+  font-size: 10px;
+  color: var(--status-green);
+}
+
+.mesh-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 6px;
+}
+
+.mesh-node {
+  padding-left: 0;
+}
+
+.mesh-node.depth-1 { padding-left: 12px; }
+.mesh-node.depth-2 { padding-left: 24px; }
+.mesh-node.depth-3 { padding-left: 36px; }
+
+.mesh-node-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.mesh-node.active > .mesh-node-row {
+  color: var(--text);
+}
+
+.mesh-node-bullet {
+  font-size: 9px;
+  width: 10px;
+  text-align: center;
+  color: var(--border-bright);
+}
+
+.mesh-node.active > .mesh-node-row .mesh-node-bullet {
+  color: var(--green-bright);
+}
+
+.mesh-node-label {
+  font-weight: 500;
+}
+
+.mesh-node-pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--status-green);
+  animation: status-blink 1.2s ease-in-out infinite;
+}
+
+.mesh-node-children {
+  border-left: 1px solid var(--border);
+  margin-left: 5px;
+}

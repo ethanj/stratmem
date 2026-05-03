@@ -1,7 +1,8 @@
 // components/IncidentCard.tsx
 import { useEffect, useMemo, useState } from "react";
 import { analyzeIncident, resolveIncident, updateIncidentAction } from "../services/api";
-import "../styles/incident.css";
+import "./IncidentCard.css";
+import type { EvidenceLine } from "../types/ravenGap";
 
 type AnalystOutput = {
   assessment: string;
@@ -19,9 +20,15 @@ type Props = {
   incident: any;
   correlation?: any;
   onIncidentUpdated?: () => Promise<any>;
+  onEvidenceClick?: (ids: string[]) => void;
 };
 
-export default function IncidentCard({ incident, correlation, onIncidentUpdated }: Props) {
+export default function IncidentCard({
+  incident,
+  correlation,
+  onIncidentUpdated,
+  onEvidenceClick,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [analyst, setAnalyst] = useState<AnalystOutput | null>(null);
   const [analystLoading, setAnalystLoading] = useState(false);
@@ -80,12 +87,12 @@ export default function IncidentCard({ incident, correlation, onIncidentUpdated 
     return (
       <div className="panel incident-panel empty">
         <div className="panel-header">
-          <h2>INCIDENT ASSESSMENT</h2>
+          <h2>COMMANDER SITREP</h2>
         </div>
 
         <div className="incident-empty-body">
-          <h3>No active incident</h3>
-          <p>System is monitoring incoming signals.</p>
+          <h3>No active SITREP</h3>
+          <p>Awaiting source reports from the mesh.</p>
         </div>
       </div>
     );
@@ -115,6 +122,10 @@ export default function IncidentCard({ incident, correlation, onIncidentUpdated 
 
   const contributingSignals = Array.isArray(incident.signals)
     ? incident.signals
+    : [];
+
+  const evidenceLines = Array.isArray(incident.evidence_lines)
+    ? incident.evidence_lines
     : [];
 
 
@@ -191,13 +202,20 @@ export default function IncidentCard({ incident, correlation, onIncidentUpdated 
 
   return (
     <>
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         className={`panel incident-panel incident-clickable ${severity}`}
         onClick={() => setOpen(true)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
       >
         <div className="panel-header">
-          <h2>INCIDENT ASSESSMENT</h2>
+          <h2>COMMANDER SITREP</h2>
           <span className="incident-status">STATUS: {incidentStatus}</span>
         </div>
 
@@ -217,6 +235,34 @@ export default function IncidentCard({ incident, correlation, onIncidentUpdated 
             <strong>{riskPercent}%</strong>
           </div>
         </div>
+
+        {evidenceLines.length > 0 && (
+          <section className="incident-evidence-lines">
+            <h4>SITREP EVIDENCE</h4>
+            <ul>
+              {evidenceLines.map((line: EvidenceLine, index: number) => (
+                <li key={index}>
+                  <button
+                    type="button"
+                    className="incident-evidence-line"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const ids = Array.isArray(line?.evidence_ids) ? line.evidence_ids : [];
+                      onEvidenceClick?.(ids);
+                    }}
+                    title="Open evidence drawer for this line"
+                  >
+                    <span className="incident-evidence-bullet" aria-hidden="true">›</span>
+                    <span className="incident-evidence-text">{line?.text || ""}</span>
+                    <span className="incident-evidence-count">
+                      {Array.isArray(line?.evidence_ids) ? line.evidence_ids.length : 0}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <div className="incident-details">
           <section>
@@ -241,7 +287,7 @@ export default function IncidentCard({ incident, correlation, onIncidentUpdated 
             </ul>
           </section>
         </div>
-      </button>
+      </div>
 
       {open && (
         <div
@@ -254,7 +300,7 @@ export default function IncidentCard({ incident, correlation, onIncidentUpdated 
           >
             <div className="incident-modal-header">
               <div>
-                <span>INCIDENT ID: {incident.id}</span>
+                <span>SITREP ID: {incident.id}</span>
                 <h2>
                   {severity.toUpperCase()} —{" "}
                   {String(incident.type || "Incident").toUpperCase()}
@@ -332,6 +378,33 @@ export default function IncidentCard({ incident, correlation, onIncidentUpdated 
                       "Sentinel Forge correlated the available signals into a staged threat assessment. The current classification reflects signal confidence, domain coverage, and escalation pattern."}
                   </p>
                 </div>
+
+                {evidenceLines.length > 0 && (
+                  <div className="incident-modal-card">
+                    <h4>SITREP EVIDENCE</h4>
+                    <ul className="incident-modal-evidence-list">
+                      {evidenceLines.map((line: EvidenceLine, index: number) => (
+                        <li key={index}>
+                          <button
+                            type="button"
+                            className="incident-evidence-line"
+                            onClick={() => {
+                              const ids = Array.isArray(line?.evidence_ids) ? line.evidence_ids : [];
+                              setOpen(false);
+                              onEvidenceClick?.(ids);
+                            }}
+                          >
+                            <span className="incident-evidence-bullet" aria-hidden="true">›</span>
+                            <span className="incident-evidence-text">{line?.text || ""}</span>
+                            <span className="incident-evidence-count">
+                              {Array.isArray(line?.evidence_ids) ? line.evidence_ids.length : 0}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 
                 <div className="incident-modal-card">

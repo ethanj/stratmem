@@ -69,7 +69,12 @@ legacy field.
     "blocked_reason": null
   },
   "mesh": {
-    "root": "PLT",
+    "root": { "id": "PLT", "label": "PL Raven" },
+    "edges": [
+      { "parent": "PLT", "child": "SQD-1" },
+      { "parent": "PLT", "child": "SQD-2" }
+    ],
+    "legacy_root": "PLT",
     "nodes": [],
     "links": []
   },
@@ -144,6 +149,11 @@ legacy field.
   "meta": { "step": 0, "status": "running", "mode": "demo" }
 }
 ```
+
+`mesh.root` and `mesh.edges` are the current canonical mesh shape. `nodes`,
+`links`, and `legacy_root` may still be emitted for backward-compatible UI
+paths, but consumers should build the tree from `{ id, label }` root plus
+`[{ parent, child }]` edges.
 
 The v3 demo starts on a constrained `3` Kbps link over a `10` second window.
 The backend computes

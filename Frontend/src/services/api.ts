@@ -1,5 +1,8 @@
 // services/api.ts
+import { buildDegradedComms, ravenGapCommsFull } from "./ravenGapStub";
+
 const BASE_URL = "http://localhost:8000";
+const DEFAULT_VOICE_AUDIO_ID = "raven_gap_salute_1";
 
 export async function getScenarios() {
   const res = await fetch(`${BASE_URL}/scenarios`);
@@ -124,4 +127,61 @@ export async function resolveIncident(payload: { incident_id: string; }) {
   });
   if (!res.ok) throw new Error("Failed to resolve incident");
   return res.json();
+}
+
+/**
+ * POST /comms/degrade. Per docs/THEPLAN.md, backend (Team A) ships only
+ * `{ degraded, source_detail_level }`; the bandwidth meter computes raw /
+ * compacted / budget locally in DegradedCommsToggle. Falls back to a local
+ * comms slice when the endpoint isn't live yet.
+ */
+export async function setCompressionEnabled(enabled: boolean) {
+  const res = await fetch(`${BASE_URL}/compression/toggle`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to toggle compression");
+  }
+
+  return res.json();
+}
+
+export async function submitVoiceReport(audio_id = DEFAULT_VOICE_AUDIO_ID) {
+  const res = await fetch(`${BASE_URL}/voice/report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ audio_id }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to submit voice report");
+  }
+
+  return res.json();
+}
+
+export async function setCommsDegraded(degraded: boolean, kbps?: number) {
+  try {
+    const res = await fetch(`${BASE_URL}/comms/degrade`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        degraded,
+        ...(kbps === undefined ? {} : { kbps }),
+      }),
+    });
+
+    if (res.ok) {
+      return res.json();
+    }
+  } catch {
+    // network / endpoint missing — fall through to local stub
+  }
+
+  return {
+    comms: degraded ? buildDegradedComms() : ravenGapCommsFull,
+  };
 }
