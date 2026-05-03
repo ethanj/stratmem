@@ -1,7 +1,63 @@
-localdocs/
+# macOS / OS files
+.DS_Store
+._*
+Thumbs.db
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Secrets / local env
 .env
-James_notes/visualization/briefing.html
-James_notes/visualization/README.md
-James_notes/visualization/scenario.html
-.fallow/cache.bin
-.fallow/churn.bin
+.env.*
+*.key
+*.pem
+!.env.example
+
+# Claude Code (project settings.json is shared, local overrides are not)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Personal notes
+James_notes/
+
+# Local-only docs
+localdocs/
+
+# fallow tool artifacts
+.fallow/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+
+# Python virtualenvs
+venv/
+.venv/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node / React / Vite build output
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Testing / Coverage
+.coverage
+htmlcov/
+.pytest_cache/
