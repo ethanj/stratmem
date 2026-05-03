@@ -1,4 +1,10 @@
-// components/TopBar.tsx
+/**
+ * Dashboard top command bar for replay controls and comms status.
+ *
+ * This branch is Raven Gap demo-only on the frontend. The optional scenario
+ * selector therefore displays Raven Gap as the sole selectable option, while
+ * the selected id itself still comes from backend-applied simulation state.
+ */
 import { useEffect, useMemo, useState } from "react";
 import "./TopBar.css";
 import DegradedCommsToggle from "./DegradedCommsToggle";
@@ -6,7 +12,7 @@ import type { Comms, Compaction, RavenGapEvent } from "../types/ravenGap";
 
 type MaybePromise<T = unknown> = T | Promise<T>;
 
- type ScenarioOption = {
+type ScenarioOption = {
   id: string;
   name: string;
   description?: string;
@@ -35,24 +41,12 @@ type Props = {
   isOffline?: boolean;
 };
 
+const DEFAULT_SCENARIO_ID = "raven_gap";
 const FALLBACK_SCENARIOS: ScenarioOption[] = [
   {
-    id: "coordinated_intrusion",
-    name: "Coordinated Intrusion",
-    description:
-      "Cyber, physical, and OSINT indicators converge into a coordinated intrusion pattern.",
-  },
-  {
-    id: "cyber_breach",
-    name: "Cyber-Only Breach",
-    description:
-      "Unauthorized access escalates into lateral movement, privilege escalation, and exfiltration.",
-  },
-  {
-    id: "physical_perimeter",
-    name: "Physical Perimeter Threat",
-    description:
-      "Drone and maritime anomalies indicate a developing perimeter threat.",
+    id: DEFAULT_SCENARIO_ID,
+    name: "Raven Gap",
+    description: "TacNet Edge platoon movement under EW degradation.",
   },
 ];
 
@@ -64,7 +58,7 @@ export default function TopBar({
   isSystemRunning,
   isBusy = false,
   scenarios = FALLBACK_SCENARIOS,
-  selectedScenarioId = "coordinated_intrusion",
+  selectedScenarioId,
   onScenarioChange,
   comms,
   events,
@@ -97,13 +91,17 @@ export default function TopBar({
     return now.toISOString().slice(0, 10).toUpperCase();
   }, [now]);
 
+  const demoScenarioOptions = useMemo(() => {
+    return scenarioOptionsForDemo(scenarios);
+  }, [scenarios]);
+
   const selectedScenario = useMemo(() => {
     return (
-      scenarios.find((scenario) => scenario.id === selectedScenarioId) ||
-      scenarios[0] ||
+      demoScenarioOptions.find((scenario) => scenario.id === selectedScenarioId) ||
+      demoScenarioOptions[0] ||
       FALLBACK_SCENARIOS[0]
     );
-  }, [scenarios, selectedScenarioId]);
+  }, [demoScenarioOptions, selectedScenarioId]);
 
   const handleRunToggle = async () => {
     if (!isAutoRunning) {
@@ -125,7 +123,7 @@ export default function TopBar({
   const handleScenarioChange = async (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
-    const nextScenarioId = event.target.value;
+    const nextScenarioId = demoScenarioId(event.target.value);
 
     setStartedAt(Date.now());
 
@@ -209,7 +207,7 @@ export default function TopBar({
             disabled={isBusy || isAutoRunning}
             title={selectedScenario.description || selectedScenario.name}
           >
-            {scenarios.map((scenario) => (
+            {demoScenarioOptions.map((scenario) => (
               <option key={scenario.id} value={scenario.id}>
                 {scenario.name}
               </option>
@@ -225,6 +223,15 @@ export default function TopBar({
       </div>
     </header>
   );
+}
+
+function demoScenarioId(scenarioId: string) {
+  return scenarioId === DEFAULT_SCENARIO_ID ? scenarioId : DEFAULT_SCENARIO_ID;
+}
+
+function scenarioOptionsForDemo(scenarios: ScenarioOption[]) {
+  const ravenScenario = scenarios.find((scenario) => scenario.id === DEFAULT_SCENARIO_ID);
+  return [ravenScenario || FALLBACK_SCENARIOS[0]];
 }
 
 function formatDuration(ms: number) {
