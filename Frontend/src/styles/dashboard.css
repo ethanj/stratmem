@@ -1,0 +1,230 @@
+/* styles/dashboard.css */
+
+.dashboard-shell {
+  width: 100%;
+  height: 100dvh;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-rows: 68px minmax(0, 1fr);
+  gap: 8px;
+  overflow: hidden;
+}
+
+/*
+  Raven Gap command-center layout per docs/THEPLAN.md.
+  Topology: top mesh strip / left feed / center map / right SITREP rail
+  / bottom dock (signals + timeline + aside).
+*/
+.dashboard-grid.raven-gap {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+
+  grid-template-columns:
+    minmax(280px, 0.85fr)
+    minmax(420px, 1.5fr)
+    minmax(290px, 1fr);
+
+  grid-template-rows:
+    minmax(120px, 0.16fr)
+    minmax(0, 1fr)
+    minmax(180px, 0.32fr);
+
+  grid-template-areas:
+    "mesh    mesh     mesh"
+    "feed    map      sitrep"
+    "signals timeline aside";
+
+  gap: 8px;
+}
+
+.mesh-area    { grid-area: mesh; }
+.feed-area    { grid-area: feed; }
+.map-area     { grid-area: map; }
+.sitrep-area  { grid-area: sitrep; }
+.signals-area { grid-area: signals; }
+.timeline-area{ grid-area: timeline; }
+.aside-area   { grid-area: aside; }
+
+.dashboard-area {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dashboard-area > .panel {
+  width: 100%;
+  height: 100%;
+}
+
+.aside-stack {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(166px, 0.96fr) minmax(142px, 0.82fr);
+  gap: 8px;
+}
+
+.aside-stack > .panel {
+  width: 100%;
+  height: 100%;
+}
+
+/* Right SITREP rail stacks IncidentCard above SitrepDeltaPanel. */
+.sitrep-area {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(140px, 0.36fr);
+  gap: 8px;
+}
+
+.sitrep-area > .panel,
+.sitrep-area > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Panel base */
+.panel {
+  min-width: 0;
+  min-height: 0;
+  background:
+    linear-gradient(180deg, rgba(15, 28, 44, 0.96), rgba(5, 12, 20, 0.96));
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 20px rgba(56, 189, 248, 0.035),
+    0 0 18px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.panel-header {
+  height: 28px;
+  flex: 0 0 28px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(84, 139, 184, 0.16);
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: #e8f3ff;
+}
+
+/* Shorter laptop/browser height */
+@media (max-height: 820px) and (min-width: 981px) {
+  .dashboard-shell {
+    grid-template-rows: 64px minmax(0, 1fr);
+    gap: 7px;
+    padding: 7px 9px;
+  }
+
+  .dashboard-grid.raven-gap {
+    gap: 7px;
+    grid-template-rows: minmax(110px, 0.14fr) minmax(0, 1fr) minmax(160px, 0.30fr);
+  }
+
+  .sitrep-area {
+    gap: 7px;
+  }
+
+  .aside-stack {
+    gap: 7px;
+  }
+
+  .panel-header {
+    height: 26px;
+    flex-basis: 26px;
+  }
+
+  .panel-header h2 {
+    font-size: 11px;
+  }
+}
+
+/* Very short desktop height */
+@media (max-height: 720px) and (min-width: 981px) {
+  .dashboard-shell {
+    grid-template-rows: 60px minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .dashboard-grid.raven-gap {
+    gap: 6px;
+    grid-template-rows: minmax(100px, 0.12fr) minmax(0, 1fr) minmax(150px, 0.28fr);
+  }
+
+  .sitrep-area {
+    gap: 6px;
+  }
+
+  .aside-stack {
+    gap: 6px;
+  }
+
+  .panel-header {
+    height: 24px;
+    flex-basis: 24px;
+    padding: 0 9px;
+  }
+
+  .panel-header h2 {
+    font-size: 10.5px;
+  }
+}
+
+/* Narrow layout: stack vertically. */
+@media (max-width: 980px) {
+  .dashboard-shell {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-rows: auto auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .dashboard-grid.raven-gap {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "mesh"
+      "sitrep"
+      "map"
+      "feed"
+      "timeline"
+      "signals"
+      "aside";
+    align-items: stretch;
+  }
+
+  .sitrep-area {
+    grid-template-rows: auto auto;
+  }
+
+  .aside-stack {
+    height: auto;
+    grid-template-rows: minmax(220px, auto) minmax(220px, auto);
+  }
+
+  .mesh-area,
+  .feed-area,
+  .map-area,
+  .sitrep-area,
+  .signals-area,
+  .timeline-area,
+  .aside-area {
+    min-height: 240px;
+  }
+
+  .map-area {
+    min-height: 420px;
+  }
+}
