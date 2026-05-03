@@ -42,6 +42,7 @@ export default function Dashboard() {
     isAutoRunning,
     isSystemRunning,
     isBusy,
+    isOffline,
     refresh,
   } = useSimulation();
 
@@ -88,6 +89,7 @@ export default function Dashboard() {
         events={state.events}
         compactions={state.compactions}
         onToggleDegraded={toggleDegraded}
+        isOffline={isOffline}
       />
 
       <main className="dashboard-grid raven-gap">

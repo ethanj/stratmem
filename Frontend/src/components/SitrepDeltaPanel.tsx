@@ -9,7 +9,7 @@ import "../styles/sitrep-delta.css";
 import type { SitrepDelta } from "../types/ravenGap";
 
 type Props = {
-  delta?: SitrepDelta;
+  delta?: SitrepDelta | null;
 };
 
 export default function SitrepDeltaPanel({ delta }: Props) {

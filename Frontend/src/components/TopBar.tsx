@@ -4,7 +4,7 @@ import "../styles/topbar.css";
 import DegradedCommsToggle from "./DegradedCommsToggle";
 import type { Comms, Compaction, RavenGapEvent } from "../types/ravenGap";
 
-type MaybePromise<T = void> = T | Promise<T>;
+type MaybePromise<T = unknown> = T | Promise<T>;
 
 export type ScenarioOption = {
   id: string;
@@ -31,6 +31,8 @@ type Props = {
   onToggleDegraded?: (degraded: boolean) => void | Promise<unknown>;
   /** Hide the scenario selector dropdown for the Raven Gap demo. */
   showScenarioSelector?: boolean;
+  /** True when the local Raven Gap engine is driving (no backend). */
+  isOffline?: boolean;
 };
 
 const FALLBACK_SCENARIOS: ScenarioOption[] = [
@@ -69,6 +71,7 @@ export default function TopBar({
   compactions,
   onToggleDegraded,
   showScenarioSelector = false,
+  isOffline = false,
 }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [startedAt, setStartedAt] = useState(() => Date.now());
@@ -175,6 +178,14 @@ export default function TopBar({
         <span className={`live-dot ${isSystemRunning ? "active" : ""}`} />
         <strong>{isSystemRunning ? "LIVE" : "READY"}</strong>
         <span className="runtime-clock">{runtime}</span>
+        {isOffline && (
+          <span
+            className="topbar-mock-pill"
+            title="Backend unreachable; local Raven Gap engine driving the demo"
+          >
+            MOCK
+          </span>
+        )}
       </div>
 
       {onToggleDegraded && (
