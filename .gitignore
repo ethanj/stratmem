@@ -27,6 +27,7 @@ James_notes/
 
 # Local-only docs
 localdocs/
+docs/
 
 # Local model/runtime dependencies
 localdeps/
