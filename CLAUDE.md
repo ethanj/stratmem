@@ -25,7 +25,14 @@ npm run lint             # eslint
 
 ### Backend (`Backend/`)
 ```sh
+# Linux / macOS / Git Bash
 python3 -m venv venv && source venv/bin/activate
+
+# Windows PowerShell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+# (if blocked: Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned)
+
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
@@ -33,6 +40,8 @@ pytest                              # all backend tests
 pytest tests/test_api_contract.py   # one file
 pytest -k "scenario"                # filter by name
 ```
+
+The backend loads `.env` from the repo root (not `Backend/`). Place secrets there.
 
 ## Architecture (the part that needs multi-file reading)
 
@@ -63,7 +72,23 @@ Routes live in `app/api/routes/`: `simulate.py`, `state.py`, `reset.py`, `agent.
 
 ### Frontend composition
 
-`Frontend/src/pages/Dashboard.tsx` is the composition root. `useSimulation` hook owns polling/stepping; the dashboard renders `IncidentCard` / `SignalBreakdown` / `ActionList` / `LogStream` / `MapView` / `CorrelationScore` / `AssetStatus` / `TopBar`. Styles are vanilla CSS modules in `Frontend/src/styles/`. **MapView uses MapLibre via react-map-gl** — heavy dep; treat changes there carefully.
+`Frontend/src/pages/Dashboard.tsx` is the composition root. `useSimulation` hook owns polling/stepping. The dashboard follows a four-panel layout (mesh tree top, source-report feed left, map center, SITREP+delta right) defined in `docs/THEPLAN.md`.
+
+Components rendered by the dashboard:
+- **Original Sentinel Forge:** `IncidentCard`, `SignalBreakdown`, `ActionList`, `LogStream`, `MapView`, `CorrelationScore`, `AssetStatus`, `TopBar`
+- **Raven Gap additions:** `MeshTree` (platoon mesh hierarchy), `CompactionTimeline` (squad-level summaries), `SitrepDeltaPanel` (what-changed bullets), `EvidenceDrawer` (source event drill-down), `DegradedCommsToggle` (EW degradation toggle + bandwidth meter)
+
+Styles are vanilla CSS modules in `Frontend/src/styles/`. **MapView uses MapLibre via react-map-gl** — heavy dep; treat changes there carefully.
+
+### Frontend-only Raven Gap engine
+
+The frontend can run the full Raven Gap demo **without the backend**. Three files power this:
+
+1. `Frontend/src/types/ravenGap.ts` — authoritative type definitions for the Raven Gap state contract (Mesh, Compaction, SitrepDelta, Comms, MapState, etc.). Also referenced by `docs/team-c-state-contract.md`.
+2. `Frontend/src/services/ravenGapStub.ts` — 12-event fixture mirroring the demo script beats. `mergeRavenGapStub(state)` fills keys the backend hasn't shipped yet; when the backend provides a real value, the merge is a no-op.
+3. `Frontend/src/services/ravenGapEngine.ts` — local scenario engine. `buildScenarioState(stepIndex, comms)` returns a `/state`-shaped object with progressive reveals. Used by `useSimulation` as a fallback when backend calls fail.
+
+The `useSimulation` hook tries the backend first; on failure it falls through to local functions (`localBoot`, `localStart`, `localStep`, `localReset`, `localToggleDegraded`). Components see the same state shape either way.
 
 ### Adapter pattern
 
@@ -71,7 +96,9 @@ Routes live in `app/api/routes/`: `simulate.py`, `state.py`, `reset.py`, `agent.
 
 ## Scenario context
 
-The hackathon scenario being built is **"Raven Gap"** (platoon under EW degradation), defined in prose in `docs/tacnet-pivot-analysis.md` §"Hackathon Demo Scenario". The current default scenario is `coordinated_intrusion` (cyber+drone+AIS); plans (`docs/unified-plan-v3.md`) call for replacing this with a `raven_gap` module under `app/scenarios/` (not yet created). Compaction text for each Raven Gap beat is **pre-baked, not LLM-generated** — keep it that way unless the user says otherwise.
+The hackathon scenario being built is **"Raven Gap"** (platoon under EW degradation). The active implementation plan is `docs/THEPLAN.md` (4-person team split). The demo script is `docs/branch-b-sentinel-forge-demo-script.md`. Older analysis lives in `docs/archive/tacnet-pivot-analysis.md`.
+
+The backend's default scenario is still `coordinated_intrusion` (cyber+drone+AIS); plans call for a `raven_gap` module under `app/scenarios/` (not yet created). The frontend already runs Raven Gap via its local engine (see "Frontend-only Raven Gap engine" above). Compaction text for each Raven Gap beat is **pre-baked, not LLM-generated** — keep it that way unless the user says otherwise.
 
 ## Code Style & Standards
 
