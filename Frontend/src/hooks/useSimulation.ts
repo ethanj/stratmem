@@ -7,7 +7,10 @@ import {
   stepSimulation,
   resetSimulation,
   getState,
+  setCommsDegraded,
 } from "../services/api";
+import { mergeRavenGapStub } from "../services/ravenGapStub";
+import type { Comms, Compaction, Mesh, SitrepDelta } from "../types/ravenGap";
 
 type ScenarioOption = {
   id: string;
@@ -21,6 +24,10 @@ type SimulationState = {
   correlation: any;
   incident: any;
   map_state: any;
+  mesh?: Mesh;
+  compactions?: Compaction[];
+  sitrep_delta?: SitrepDelta;
+  comms?: Comms;
   scenario?: ScenarioOption;
   meta?: {
     mode?: string;
@@ -59,8 +66,9 @@ export function useSimulation() {
   const stepInFlightRef = useRef(false);
 
   const applyState = (nextState: SimulationState) => {
-    stateRef.current = nextState;
-    setState(nextState);
+    const merged = mergeRavenGapStub(nextState) as SimulationState;
+    stateRef.current = merged;
+    setState(merged);
   };
 
   const refresh = async () => {
@@ -155,12 +163,39 @@ export function useSimulation() {
     await start();
   };
 
+  const toggleDegraded = async (degraded: boolean) => {
+    setIsBusy(true);
+    try {
+      const data = await setCommsDegraded(degraded, 3);
+      const current = stateRef.current;
+      const next: SimulationState = {
+        ...current,
+        ...(data && typeof data === "object" && "events" in data ? data : {}),
+        comms: data?.comms ?? current.comms,
+      };
+      applyState(next);
+      return next;
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   useEffect(() => {
     const boot = async () => {
       setIsBusy(true);
 
       try {
-        await Promise.all([refresh(), loadScenarios()]);
+        await loadScenarios();
+
+        // Prefer raven_gap when the backend has it. If A hasn't registered it
+        // yet, fall through to whatever scenario the backend defaults to so
+        // the demo still renders against the stub.
+        try {
+          const data = await selectScenario("raven_gap");
+          applyState(data);
+        } catch {
+          await refresh();
+        }
       } finally {
         setIsBusy(false);
       }
@@ -199,6 +234,7 @@ export function useSimulation() {
     reset,
     toggleRun,
     changeScenario,
+    toggleDegraded,
     isAutoRunning,
     isSystemRunning,
     isBusy,

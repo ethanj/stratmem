@@ -1,4 +1,9 @@
 // components/SignalBreakdown.tsx
+// TODO(team-b): full TacNet vocabulary pass against B's delivered list.
+// Light-touch relabels in SIGNAL_DEFINITIONS below mirror Raven Gap callsigns
+// (UAS Contact, Maritime Track, Perimeter Breach) per docs/THEPLAN.md and
+// docs/tacnet-pivot-analysis.md. Keep `kind` keys stable — they bind to the
+// backend correlation signals, not display.
 
 type Signal = {
   id: string;
@@ -65,15 +70,15 @@ const SIGNAL_DEFINITIONS: SignalDefinition[] = [
   },
   {
     kind: "physical.drone_recon",
-    label: "Drone Activity",
-    description: "Drone activity detected near protected perimeter",
+    label: "UAS Contact",
+    description: "UAS observation near protected zone or NAI",
     tone: "drone",
     icon: "⌁",
   },
   {
     kind: "osint.ais_anomaly",
-    label: "AIS Anomaly",
-    description: "AIS behavior indicates suspicious vessel activity",
+    label: "Maritime Track",
+    description: "AIS behavior indicates anomalous vessel activity",
     tone: "ais",
     icon: "◈",
   },
@@ -107,8 +112,8 @@ const SIGNAL_DEFINITIONS: SignalDefinition[] = [
   },
   {
     kind: "physical.breach",
-    label: "Physical Breach",
-    description: "No physical breach detected",
+    label: "Perimeter Breach",
+    description: "No perimeter breach detected at OP/LP picket line",
     tone: "inactive",
     icon: "◇",
   },

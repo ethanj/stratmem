@@ -1,6 +1,8 @@
 // components/TopBar.tsx
 import { useEffect, useMemo, useState } from "react";
 import "../styles/topbar.css";
+import DegradedCommsToggle from "./DegradedCommsToggle";
+import type { Comms } from "../types/ravenGap";
 
 type MaybePromise<T = void> = T | Promise<T>;
 
@@ -21,6 +23,12 @@ type Props = {
   scenarios?: ScenarioOption[];
   selectedScenarioId?: string;
   onScenarioChange?: (scenarioId: string) => MaybePromise;
+
+  /** Raven Gap EW-degraded controls. */
+  comms?: Comms;
+  onToggleDegraded?: (degraded: boolean) => void | Promise<unknown>;
+  /** Hide the scenario selector dropdown for the Raven Gap demo. */
+  showScenarioSelector?: boolean;
 };
 
 const FALLBACK_SCENARIOS: ScenarioOption[] = [
@@ -54,6 +62,9 @@ export default function TopBar({
   scenarios = FALLBACK_SCENARIOS,
   selectedScenarioId = "coordinated_intrusion",
   onScenarioChange,
+  comms,
+  onToggleDegraded,
+  showScenarioSelector = false,
 }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [startedAt, setStartedAt] = useState(() => Date.now());
@@ -122,8 +133,8 @@ export default function TopBar({
         <div className="brand-mark">♜</div>
 
         <div>
-          <h1>SENTINEL FORGE</h1>
-          <p>Multi-Domain Threat Fusion &amp; Decision Engine</p>
+          <h1>TACNET EDGE</h1>
+          <p>Tactical Mesh Compaction &amp; Commander Decision Layer</p>
         </div>
       </div>
 
@@ -134,7 +145,7 @@ export default function TopBar({
           onClick={handleRunToggle}
           disabled={isBusy && !isAutoRunning}
         >
-          {isAutoRunning ? "Ⅱ PAUSE" : "▶ START"}
+          {isAutoRunning ? "Ⅱ PAUSE" : "▶ REPLAY SCENARIO"}
         </button>
 
         <button
@@ -162,23 +173,33 @@ export default function TopBar({
         <span className="runtime-clock">{runtime}</span>
       </div>
 
-      <div className="scenario-box">
-        <span>SCENARIO</span>
+      {onToggleDegraded && (
+        <DegradedCommsToggle
+          comms={comms}
+          onChange={onToggleDegraded}
+          disabled={isBusy}
+        />
+      )}
 
-        <select
-          className="scenario-select"
-          value={selectedScenario.id}
-          onChange={handleScenarioChange}
-          disabled={isBusy || isAutoRunning}
-          title={selectedScenario.description || selectedScenario.name}
-        >
-          {scenarios.map((scenario) => (
-            <option key={scenario.id} value={scenario.id}>
-              {scenario.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {showScenarioSelector && (
+        <div className="scenario-box">
+          <span>SCENARIO</span>
+
+          <select
+            className="scenario-select"
+            value={selectedScenario.id}
+            onChange={handleScenarioChange}
+            disabled={isBusy || isAutoRunning}
+            title={selectedScenario.description || selectedScenario.name}
+          >
+            {scenarios.map((scenario) => (
+              <option key={scenario.id} value={scenario.id}>
+                {scenario.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="time-box">
         <span>TIME</span>

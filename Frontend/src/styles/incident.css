@@ -846,3 +846,79 @@
   color: #9ca3af;
   text-decoration: line-through;
 }
+
+/* =========================================================
+   SITREP Evidence Lines (Raven Gap)
+========================================================= */
+
+.incident-evidence-lines {
+  padding: 6px 12px 8px;
+  border-top: 1px solid rgba(84, 139, 184, 0.16);
+}
+
+.incident-evidence-lines h4 {
+  margin: 0 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.incident-evidence-lines ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.incident-evidence-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-left: 2px solid var(--cyan);
+  border-radius: 4px;
+  background: rgba(7, 17, 28, 0.55);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  padding: 5px 8px;
+}
+
+.incident-evidence-line:hover {
+  border-color: var(--cyan);
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.incident-evidence-bullet {
+  color: var(--cyan);
+  font-size: 12px;
+}
+
+.incident-evidence-text {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.incident-evidence-count {
+  color: var(--muted);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0 6px;
+}
+
+.incident-modal-evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

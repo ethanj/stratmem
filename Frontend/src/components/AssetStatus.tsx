@@ -1,4 +1,8 @@
 // components/AssetStatus.tsx
+// TODO(team-b): full TacNet vocabulary pass against B's delivered list.
+// Fallback labels relabeled below to Raven Gap-friendly terms (MESH GATEWAY,
+// UAS LINK, SITREP FUSION). When backend supplies real assets, those
+// names override the fallback.
 
 type AssetStatusValue =
   | "operational"
@@ -27,43 +31,43 @@ type Props = {
 
 const FALLBACK_ASSETS: Asset[] = [
   {
-    id: "asset-auth-gw-01",
-    name: "AUTH SERVER",
-    kind: "auth_gateway",
-    domain: "cyber",
+    id: "asset-mesh-gw",
+    name: "MESH GATEWAY",
+    kind: "mesh_gateway",
+    domain: "fusion",
     status: "operational",
   },
   {
-    id: "asset-edr-network",
-    name: "EDR SENSOR NETWORK",
-    kind: "endpoint_detection",
-    domain: "cyber",
-    status: "operational",
-  },
-  {
-    id: "asset-network-gateway",
-    name: "NETWORK GATEWAY",
-    kind: "network_gateway",
-    domain: "cyber",
-    status: "operational",
-  },
-  {
-    id: "asset-uas-monitoring",
-    name: "UAS MONITORING",
-    kind: "uas_sensor",
+    id: "asset-op-lp-s7",
+    name: "OP/LP SENSOR S7",
+    kind: "ground_sensor",
     domain: "physical",
     status: "operational",
   },
   {
-    id: "asset-ais-monitoring",
-    name: "AIS MONITORING",
+    id: "asset-rq-11",
+    name: "UAS LINK (RQ-11)",
+    kind: "uas",
+    domain: "physical",
+    status: "operational",
+  },
+  {
+    id: "asset-jltv-v1",
+    name: "JLTV V1",
+    kind: "vehicle",
+    domain: "physical",
+    status: "operational",
+  },
+  {
+    id: "asset-ais-feed",
+    name: "AIS FEED",
     kind: "ais_feed",
     domain: "osint",
     status: "operational",
   },
   {
-    id: "asset-fusion-core",
-    name: "FUSION CORE",
+    id: "asset-sitrep-fusion",
+    name: "SITREP FUSION",
     kind: "fusion_engine",
     domain: "fusion",
     status: "standby",

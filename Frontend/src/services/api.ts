@@ -1,4 +1,6 @@
 // services/api.ts
+import { buildDegradedComms, ravenGapCommsFull } from "./ravenGapStub";
+
 const BASE_URL = "http://localhost:8000";
 
 export async function getScenarios() {
@@ -124,4 +126,29 @@ export async function resolveIncident(payload: { incident_id: string; }) {
   });
   if (!res.ok) throw new Error("Failed to resolve incident");
   return res.json();
+}
+
+/**
+ * POST /comms/degrade. Backend (Team A) flips state.comms.degraded and fills
+ * the budget/raw/compacted fields. While A's endpoint isn't live, fall back
+ * to a locally-computed comms slice so the toggle still demos.
+ */
+export async function setCommsDegraded(degraded: boolean, kbps = 3) {
+  try {
+    const res = await fetch(`${BASE_URL}/comms/degrade`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ degraded, kbps }),
+    });
+
+    if (res.ok) {
+      return res.json();
+    }
+  } catch {
+    // network / endpoint missing — fall through to local stub
+  }
+
+  return {
+    comms: degraded ? buildDegradedComms(kbps) : ravenGapCommsFull,
+  };
 }
