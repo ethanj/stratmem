@@ -1,0 +1,245 @@
+/**
+ * Operational dashboard styling for the TacNet voice metadata prototype.
+ * The layout is dense by design: the demo needs the full compression chain on
+ * screen without scrolling during a live run.
+ */
+:root {
+  color-scheme: dark;
+  --bg: #101418;
+  --panel: #172026;
+  --panel-2: #1d2931;
+  --text: #edf3f7;
+  --muted: #9fb2bf;
+  --line: #31424c;
+  --accent: #66d9a6;
+  --warn: #ffc857;
+  --bad: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 1px solid var(--line);
+  background: #22303a;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+textarea,
+input,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #0f151a;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.shell {
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.topbar,
+.control-bar,
+.panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+}
+
+h2 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+p {
+  color: var(--muted);
+}
+
+.status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 320px;
+}
+
+.status-strip span {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.control-bar {
+  display: grid;
+  grid-template-columns: 140px 180px 130px 170px minmax(170px, 1fr) minmax(170px, 1fr);
+  gap: 12px;
+  align-items: end;
+  margin-top: 14px;
+  padding: 14px;
+}
+
+label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.panel {
+  min-height: 240px;
+  padding: 14px;
+}
+
+.output {
+  min-height: 160px;
+  max-height: 300px;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--line);
+  background: #0b1115;
+  border-radius: 6px;
+  padding: 10px;
+  color: #d7fbe8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.talk {
+  width: 100%;
+  min-height: 64px;
+  margin-bottom: 10px;
+  border-color: #2f7f5f;
+  background: #143d31;
+  font-weight: 700;
+}
+
+.talk.recording {
+  border-color: var(--bad);
+  background: #4a1b1b;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.metric {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.metric strong {
+  display: block;
+  font-size: 18px;
+}
+
+.metric span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.timeline {
+  margin-top: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.event {
+  border-left: 3px solid var(--accent);
+  padding-left: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.brief {
+  margin: 12px 0;
+  border: 1px solid #355c4b;
+  background: #10251d;
+  border-radius: 6px;
+  padding: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  .control-bar,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    display: block;
+  }
+
+  .status-strip {
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+}

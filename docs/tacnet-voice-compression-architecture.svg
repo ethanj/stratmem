@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="920" viewBox="0 0 1600 920" role="img" aria-labelledby="title desc">
+  <title id="title">TacNet voice-to-metadata compression high-level system architecture</title>
+  <desc id="desc">A visual architecture diagram showing Computer A converting audio to mission metadata and binary frames, a constrained low-bandwidth link, Computer B reconstructing text and voice, and an observability lane measuring latency and byte budgets.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#263238"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#1565c0"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f9fb; }
+      .lane { fill: #ffffff; stroke: #b0bec5; stroke-width: 2; }
+      .lane-title { font: 700 28px Arial, sans-serif; fill: #263238; }
+      .subtitle { font: 18px Arial, sans-serif; fill: #546e7a; }
+      .box { fill: #eef5ff; stroke: #1565c0; stroke-width: 2.5; rx: 16; }
+      .box-green { fill: #edf7ed; stroke: #2e7d32; stroke-width: 2.5; rx: 16; }
+      .box-orange { fill: #fff4e5; stroke: #ef6c00; stroke-width: 2.5; rx: 16; }
+      .box-gray { fill: #f3f4f6; stroke: #607d8b; stroke-width: 2.5; rx: 16; }
+      .box-title { font: 700 20px Arial, sans-serif; fill: #1f2933; }
+      .box-text { font: 16px Arial, sans-serif; fill: #37474f; }
+      .tiny { font: 14px Arial, sans-serif; fill: #455a64; }
+      .arrow { stroke: #263238; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .arrow-blue { stroke: #1565c0; stroke-width: 3; fill: none; marker-end: url(#arrow-blue); }
+      .dashed { stroke-dasharray: 8 8; }
+      .metric { fill: #fffde7; stroke: #f9a825; stroke-width: 2; rx: 14; }
+      .label { font: 700 16px Arial, sans-serif; fill: #263238; }
+      .badge { fill: #263238; rx: 12; }
+      .badge-text { font: 700 14px Arial, sans-serif; fill: #ffffff; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="920"/>
+  <text x="60" y="58" class="lane-title">TacNet Voice-to-Metadata Compression - High-Level System Design</text>
+  <text x="60" y="88" class="subtitle">Transmit compact mission metadata, not raw audio. Optimize for mouth-to-ear latency under constrained bandwidth.</text>
+
+  <rect class="lane" x="50" y="125" width="650" height="520" rx="24"/>
+  <text x="80" y="168" class="lane-title">Computer A - Sender</text>
+  <text x="80" y="196" class="subtitle">Capture speech, extract mission facts, encode compact binary frame</text>
+
+  <rect class="lane" x="735" y="125" width="185" height="520" rx="24"/>
+  <text x="760" y="168" class="lane-title">Link</text>
+  <text x="760" y="196" class="subtitle">Low bandwidth</text>
+
+  <rect class="lane" x="955" y="125" width="595" height="520" rx="24"/>
+  <text x="985" y="168" class="lane-title">Computer B - Receiver</text>
+  <text x="985" y="196" class="subtitle">Decode metadata, reconstruct text, speak audio</text>
+
+  <rect class="lane" x="50" y="690" width="1500" height="175" rx="24"/>
+  <text x="80" y="733" class="lane-title">Observability and Safety Rails</text>
+  <text x="80" y="760" class="subtitle">Every stage emits latency, bytes, queue delay, and fallback state. Demo must show the bottleneck.</text>
+
+  <rect class="box" x="85" y="250" width="145" height="96"/>
+  <text x="112" y="288" class="box-title">Mic</text>
+  <text x="112" y="316" class="box-text">Push-to-talk</text>
+  <text x="112" y="338" class="box-text">or VAD</text>
+
+  <rect class="box" x="260" y="250" width="160" height="96"/>
+  <text x="292" y="288" class="box-title">STT</text>
+  <text x="284" y="316" class="box-text">Demo: LLM</text>
+  <text x="284" y="338" class="box-text">Product: SLM</text>
+
+  <rect class="box-green" x="450" y="250" width="190" height="96"/>
+  <text x="470" y="288" class="box-title">Metadata Extractor</text>
+  <text x="482" y="316" class="box-text">facts, priority,</text>
+  <text x="482" y="338" class="box-text">request, location</text>
+
+  <rect class="box-green" x="165" y="405" width="190" height="96"/>
+  <text x="190" y="443" class="box-title">Mission Metadata</text>
+  <text x="194" y="471" class="box-text">source, priority,</text>
+  <text x="194" y="493" class="box-text">request, payload</text>
+
+  <rect class="box-orange" x="405" y="405" width="190" height="96"/>
+  <text x="438" y="443" class="box-title">Binary Codec</text>
+  <text x="438" y="471" class="box-text">versioned packet</text>
+  <text x="438" y="493" class="box-text">checksum / MAC</text>
+
+  <rect class="box-orange" x="765" y="300" width="125" height="190"/>
+  <text x="790" y="340" class="box-title">3 Kbps</text>
+  <text x="786" y="370" class="box-text">byte budget</text>
+  <text x="786" y="395" class="box-text">queue delay</text>
+  <text x="786" y="420" class="box-text">loss / jitter</text>
+  <text x="786" y="452" class="tiny">demo knob</text>
+
+  <rect class="box-gray" x="985" y="250" width="175" height="96"/>
+  <text x="1018" y="288" class="box-title">Receiver</text>
+  <text x="1018" y="316" class="box-text">jitter buffer</text>
+  <text x="1018" y="338" class="box-text">dedupe / order</text>
+
+  <rect class="box-orange" x="1190" y="250" width="160" height="96"/>
+  <text x="1225" y="288" class="box-title">Decode</text>
+  <text x="1218" y="316" class="box-text">binary frame</text>
+  <text x="1218" y="338" class="box-text">to metadata</text>
+
+  <rect class="box-green" x="1375" y="250" width="135" height="96"/>
+  <text x="1405" y="288" class="box-title">Text</text>
+  <text x="1395" y="316" class="box-text">reconstruct</text>
+  <text x="1395" y="338" class="box-text">facts only</text>
+
+  <rect class="box" x="1095" y="405" width="190" height="96"/>
+  <text x="1137" y="443" class="box-title">TTS</text>
+  <text x="1125" y="471" class="box-text">stream first</text>
+  <text x="1125" y="493" class="box-text">audio fast</text>
+
+  <rect class="box" x="1330" y="405" width="150" height="96"/>
+  <text x="1372" y="443" class="box-title">Voice</text>
+  <text x="1360" y="471" class="box-text">speaker /</text>
+  <text x="1360" y="493" class="box-text">earpiece</text>
+
+  <path class="arrow" d="M230 298 H260"/>
+  <path class="arrow" d="M420 298 H450"/>
+  <path class="arrow" d="M545 346 V405"/>
+  <path class="arrow" d="M355 453 H405"/>
+  <path class="arrow" d="M595 453 C665 453 692 395 765 395"/>
+  <path class="arrow" d="M890 395 C930 395 940 298 985 298"/>
+  <path class="arrow" d="M1160 298 H1190"/>
+  <path class="arrow" d="M1350 298 H1375"/>
+  <path class="arrow" d="M1442 346 C1442 380 1265 380 1265 405"/>
+  <path class="arrow" d="M1285 453 H1330"/>
+
+  <rect class="badge" x="80" y="570" width="178" height="32"/>
+  <text class="badge-text" x="100" y="591">No audio transmitted</text>
+  <rect class="badge" x="280" y="570" width="205" height="32"/>
+  <text class="badge-text" x="300" y="591">Binary metadata packet</text>
+  <rect class="badge" x="505" y="570" width="166" height="32"/>
+  <text class="badge-text" x="525" y="591">Latency measured</text>
+  <rect class="badge" x="1000" y="570" width="222" height="32"/>
+  <text class="badge-text" x="1020" y="591">Unsupported details rejected</text>
+  <rect class="badge" x="1245" y="570" width="210" height="32"/>
+  <text class="badge-text" x="1265" y="591">First audio starts early</text>
+
+  <rect class="metric" x="90" y="785" width="220" height="52"/>
+  <text class="label" x="112" y="816">Capture + VAD</text>
+  <text class="tiny" x="112" y="834">target 100-300 ms</text>
+
+  <rect class="metric" x="335" y="785" width="220" height="52"/>
+  <text class="label" x="360" y="816">STT / transcript</text>
+  <text class="tiny" x="360" y="834">largest demo risk</text>
+
+  <rect class="metric" x="580" y="785" width="220" height="52"/>
+  <text class="label" x="605" y="816">Binary bytes</text>
+  <text class="tiny" x="605" y="834">must fit 3 Kbps</text>
+
+  <rect class="metric" x="825" y="785" width="220" height="52"/>
+  <text class="label" x="850" y="816">Transport delay</text>
+  <text class="tiny" x="850" y="834">queue + jitter</text>
+
+  <rect class="metric" x="1070" y="785" width="220" height="52"/>
+  <text class="label" x="1095" y="816">Reconstruction</text>
+  <text class="tiny" x="1095" y="834">facts-only LLM/SLM</text>
+
+  <rect class="metric" x="1315" y="785" width="200" height="52"/>
+  <text class="label" x="1340" y="816">First audio</text>
+  <text class="tiny" x="1340" y="834">under 3 sec P0</text>
+
+  <path class="arrow-blue dashed" d="M190 785 C190 705 340 710 340 346"/>
+  <path class="arrow-blue dashed" d="M445 785 C445 700 500 700 500 501"/>
+  <path class="arrow-blue dashed" d="M690 785 C690 700 827 700 827 490"/>
+  <path class="arrow-blue dashed" d="M1180 785 C1180 690 1190 690 1190 501"/>
+</svg>

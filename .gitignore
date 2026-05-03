@@ -27,6 +27,10 @@ James_notes/
 # Local-only docs
 localdocs/
 
+# Local model/runtime dependencies
+localdeps/
+models/
+
 # fallow tool artifacts
 .fallow/
 

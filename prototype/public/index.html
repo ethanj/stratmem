@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TacNet Voice Metadata Link</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>TacNet Voice Metadata Link</h1>
+          <p>Offline speech to mission metadata to CBOR to decoded S2 picture.</p>
+        </div>
+        <div class="status-strip">
+          <span id="serverStatus">Server: checking</span>
+          <span id="peerStatus">Peer: idle</span>
+          <span id="sttStatus">STT: idle</span>
+        </div>
+      </header>
+
+      <section class="control-bar">
+        <label>
+          Role
+          <select id="roleSelect">
+            <option value="sender">Sender</option>
+            <option value="receiver">Receiver</option>
+          </select>
+        </label>
+        <label>
+          Room
+          <input id="roomInput" value="raven-gap" autocomplete="off">
+        </label>
+        <button id="connectPeer">Connect Peer</button>
+        <button id="connectStt" class="sender-only">Connect Offline STT</button>
+        <label>
+          Bandwidth
+          <input id="bandwidthInput" type="range" min="0.5" max="12" step="0.5" value="3">
+          <span id="bandwidthLabel">3 Kbps</span>
+        </label>
+        <label>
+          Jitter
+          <input id="jitterInput" type="range" min="0" max="800" step="25" value="150">
+          <span id="jitterLabel">150 ms</span>
+        </label>
+      </section>
+
+      <section class="grid">
+        <article class="panel sender-only">
+          <h2>Sender</h2>
+          <button id="talkButton" class="talk">Hold to Talk</button>
+          <textarea id="manualTranscript" rows="4" placeholder="Manual fallback transcript"></textarea>
+          <div class="button-row">
+            <button data-sample="resupply">Sample Resupply</button>
+            <button data-sample="salute">Sample SALUTE</button>
+            <button data-sample="casevac">Sample CASEVAC</button>
+            <button id="sendTranscript">Extract + Send</button>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Transcript</h2>
+          <pre id="transcriptView" class="output"></pre>
+        </article>
+
+        <article class="panel">
+          <h2>Mission Metadata JSON</h2>
+          <pre id="metadataView" class="output"></pre>
+        </article>
+
+        <article class="panel">
+          <h2>Binary Frame</h2>
+          <pre id="binaryView" class="output"></pre>
+        </article>
+
+        <article class="panel">
+          <h2>Low-Bandwidth Link</h2>
+          <div id="metricsView" class="metrics"></div>
+          <div id="timelineView" class="timeline"></div>
+        </article>
+
+        <article class="panel receiver-only">
+          <h2>Receiver: S2 / Commander Picture</h2>
+          <pre id="receiverMetadata" class="output"></pre>
+          <div id="receiverSummary" class="brief"></div>
+          <button id="speakLast">Speak Last</button>
+        </article>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
