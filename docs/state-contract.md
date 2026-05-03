@@ -69,7 +69,12 @@ legacy field.
     "blocked_reason": null
   },
   "mesh": {
-    "root": "PLT",
+    "root": { "id": "PL", "label": "Platoon Leader" },
+    "edges": [
+      { "parent": "PL", "child": "1st_squad" },
+      { "parent": "1st_squad", "child": "1st_squad_team_a" }
+    ],
+    "legacy_root": "PLT",
     "nodes": [],
     "links": []
   },
@@ -112,7 +117,10 @@ legacy field.
       {
         "id": "pl_raven",
         "label": "PL Raven",
-        "points": [{ "lat": 37.4662, "lon": -118.6788 }]
+        "points": [
+          { "lat": 37.4662, "lon": -118.6788 },
+          { "lat": 37.4825, "lon": -118.6762 }
+        ]
       }
     ],
     "checkpoints": [{ "id": "cp1", "label": "CP1", "lat": 37.4718, "lon": -118.6821 }],
@@ -120,7 +128,12 @@ legacy field.
       {
         "id": "nai_2",
         "label": "NAI-2 East Ridge",
-        "polygon": [{ "lat": 37.4792, "lon": -118.6738 }]
+        "polygon": [
+          { "lat": 37.4772, "lon": -118.6758 },
+          { "lat": 37.4772, "lon": -118.6718 },
+          { "lat": 37.4812, "lon": -118.6718 },
+          { "lat": 37.4812, "lon": -118.6758 }
+        ]
       }
     ],
     "friendly_markers": [{ "id": "sqd-1", "label": "1/A", "lat": 37.4718, "lon": -118.6821 }],
@@ -144,6 +157,11 @@ legacy field.
   "meta": { "step": 0, "status": "running", "mode": "demo" }
 }
 ```
+
+`mesh.root = { id, label }` and `mesh.edges = [{ parent, child }]` are the
+current frontend contract. `mesh.nodes` and `mesh.links` are legacy
+backward-compatible fields that may still be emitted for older Sentinel Forge
+components during the transition.
 
 The v3 demo starts on a constrained `3` Kbps link over a `10` second window.
 The backend computes

@@ -1,10 +1,17 @@
-// components/TopBar.tsx
+/**
+ * Top-level control bar for the Raven Gap demo console.
+ *
+ * This component owns the visible replay controls, runtime clock, scenario
+ * selector, and UTC time readout. On the v3 demo branch it intentionally
+ * narrows scenario display to Raven Gap so legacy Sentinel Forge scenarios do
+ * not surface in the operator UI while backend defaults remain unchanged.
+ */
 import { useEffect, useMemo, useState } from "react";
 import "../styles/topbar.css";
 
 type MaybePromise<T = void> = T | Promise<T>;
 
- type ScenarioOption = {
+type ScenarioOption = {
   id: string;
   name: string;
   description?: string;
@@ -23,24 +30,13 @@ type Props = {
   onScenarioChange?: (scenarioId: string) => MaybePromise;
 };
 
+const DEMO_SCENARIO_ID = "raven_gap";
+
 const FALLBACK_SCENARIOS: ScenarioOption[] = [
   {
-    id: "coordinated_intrusion",
-    name: "Coordinated Intrusion",
-    description:
-      "Cyber, physical, and OSINT indicators converge into a coordinated intrusion pattern.",
-  },
-  {
-    id: "cyber_breach",
-    name: "Cyber-Only Breach",
-    description:
-      "Unauthorized access escalates into lateral movement, privilege escalation, and exfiltration.",
-  },
-  {
-    id: "physical_perimeter",
-    name: "Physical Perimeter Threat",
-    description:
-      "Drone and maritime anomalies indicate a developing perimeter threat.",
+    id: DEMO_SCENARIO_ID,
+    name: "Raven Gap",
+    description: "TacNet Edge platoon movement under EW degradation.",
   },
 ];
 
@@ -52,7 +48,7 @@ export default function TopBar({
   isSystemRunning,
   isBusy = false,
   scenarios = FALLBACK_SCENARIOS,
-  selectedScenarioId = "coordinated_intrusion",
+  selectedScenarioId,
   onScenarioChange,
 }: Props) {
   const [now, setNow] = useState(() => new Date());
@@ -79,13 +75,20 @@ export default function TopBar({
     return now.toISOString().slice(0, 10).toUpperCase();
   }, [now]);
 
+  const demoScenarios = useMemo(() => {
+    const ravenScenario = scenarios.find(
+      (scenario) => scenario.id === DEMO_SCENARIO_ID
+    );
+
+    return [ravenScenario || FALLBACK_SCENARIOS[0]];
+  }, [scenarios]);
+
   const selectedScenario = useMemo(() => {
     return (
-      scenarios.find((scenario) => scenario.id === selectedScenarioId) ||
-      scenarios[0] ||
-      FALLBACK_SCENARIOS[0]
+      demoScenarios.find((scenario) => scenario.id === selectedScenarioId) ||
+      demoScenarios[0]
     );
-  }, [scenarios, selectedScenarioId]);
+  }, [demoScenarios, selectedScenarioId]);
 
   const handleRunToggle = async () => {
     if (!isAutoRunning) {
@@ -112,7 +115,9 @@ export default function TopBar({
     setStartedAt(Date.now());
 
     if (onScenarioChange) {
-      await onScenarioChange(nextScenarioId);
+      await onScenarioChange(
+        nextScenarioId === DEMO_SCENARIO_ID ? nextScenarioId : DEMO_SCENARIO_ID
+      );
     }
   };
 
@@ -172,7 +177,7 @@ export default function TopBar({
           disabled={isBusy || isAutoRunning}
           title={selectedScenario.description || selectedScenario.name}
         >
-          {scenarios.map((scenario) => (
+          {demoScenarios.map((scenario) => (
             <option key={scenario.id} value={scenario.id}>
               {scenario.name}
             </option>

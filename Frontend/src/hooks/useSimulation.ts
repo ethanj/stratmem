@@ -1,4 +1,12 @@
-// hooks/useSimulation.ts
+/**
+ * React state orchestrator for the backend-owned simulation contract.
+ *
+ * The hook owns polling-free state application, scenario selection, replay
+ * controls, and v3 Raven Gap actions such as compression toggling, degraded
+ * comms updates, and deterministic voice-report submission. Every backend
+ * response flows through `applyState` so panels observe one consistent state
+ * shape.
+ */
 import { useEffect, useRef, useState } from "react";
 import {
   getScenarios,
@@ -7,6 +15,9 @@ import {
   stepSimulation,
   resetSimulation,
   getState,
+  setCompressionEnabled as apiSetCompressionEnabled,
+  setCommsDegraded as apiSetCommsDegraded,
+  submitVoiceReport as apiSubmitVoiceReport,
 } from "../services/api";
 
 type ScenarioOption = {
@@ -21,6 +32,8 @@ type SimulationState = {
   correlation: any;
   incident: any;
   map_state: any;
+  voice_report: any;
+  comms: any;
   scenario?: ScenarioOption;
   meta?: {
     mode?: string;
@@ -29,17 +42,32 @@ type SimulationState = {
   };
 };
 
+const DEFAULT_SCENARIO_ID = "raven_gap";
+const DEFAULT_SCENARIO: ScenarioOption = {
+  id: DEFAULT_SCENARIO_ID,
+  name: "Raven Gap",
+  description: "TacNet Edge platoon movement under EW degradation.",
+};
+
+const EMPTY_RAVEN_MAP_STATE = {
+  mgrs_grid_anchor: {},
+  phase_line: [],
+  checkpoints: [],
+  nais: [],
+  friendly_markers: [],
+  contact_markers: [],
+  risk_zones: [],
+  routes: [],
+};
+
 const INITIAL_STATE: SimulationState = {
   events: [],
   signals: [],
   correlation: null,
   incident: null,
-  map_state: null,
-  scenario: {
-    id: "coordinated_intrusion",
-    name: "Coordinated Intrusion",
-    description: "Cyber, physical, and OSINT indicators converge.",
-  },
+  map_state: EMPTY_RAVEN_MAP_STATE,
+  voice_report: null,
+  comms: null,
   meta: {
     mode: "demo",
     step: 0,
@@ -53,7 +81,7 @@ export function useSimulation() {
   const [state, setState] = useState<SimulationState>(INITIAL_STATE);
   const [scenarios, setScenarios] = useState<ScenarioOption[]>([]);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
-  const [isBusy, setIsBusy] = useState(false);
+  const [isBusy, setIsBusy] = useState(true);
 
   const stateRef = useRef<SimulationState>(INITIAL_STATE);
   const stepInFlightRef = useRef(false);
@@ -63,15 +91,47 @@ export function useSimulation() {
     setState(nextState);
   };
 
+  const selectAndApplyRavenGap = async (source: string, retry = true) => {
+    const ravenState = await selectScenario(DEFAULT_SCENARIO_ID);
+
+    if (!isRavenGapState(ravenState)) {
+      warnNonRavenResponse(source, ravenState);
+
+      if (retry) {
+        return selectAndApplyRavenGap(`${source}:retry`, false);
+      }
+    }
+
+    applyState(ravenState);
+    return ravenState;
+  };
+
+  const applyRavenResponse = async (nextState: SimulationState, source: string) => {
+    if (isRavenGapState(nextState)) {
+      applyState(nextState);
+      return nextState;
+    }
+
+    warnNonRavenResponse(source, nextState);
+    return selectAndApplyRavenGap(`${source}:fallback_select`);
+  };
+
+  const ensureRavenGapSelected = async () => {
+    if (stateRef.current?.scenario?.id === DEFAULT_SCENARIO_ID) {
+      return stateRef.current;
+    }
+
+    return selectAndApplyRavenGap("ensureRavenGapSelected");
+  };
+
   const refresh = async () => {
     const data = await getState();
-    applyState(data);
-    return data;
+    return applyRavenResponse(data, "refresh");
   };
 
   const loadScenarios = async () => {
     const data = await getScenarios();
-    setScenarios(data.scenarios || []);
+    setScenarios(demoScenarios(data.scenarios));
     return data;
   };
 
@@ -80,9 +140,8 @@ export function useSimulation() {
     setIsAutoRunning(false);
 
     try {
-      const data = await selectScenario(scenarioId);
-      applyState(data);
-      return data;
+      const data = await selectScenario(demoScenarioId(scenarioId));
+      return applyRavenResponse(data, "scenario/select");
     } finally {
       setIsBusy(false);
     }
@@ -92,10 +151,11 @@ export function useSimulation() {
     setIsBusy(true);
 
     try {
+      await ensureRavenGapSelected();
       const data = await startSimulation();
-      applyState(data);
-      setIsAutoRunning(true);
-      return data;
+      const appliedState = await applyRavenResponse(data, "simulate/start");
+      setIsAutoRunning(appliedState?.meta?.status === "running");
+      return appliedState;
     } finally {
       setIsBusy(false);
     }
@@ -112,14 +172,15 @@ export function useSimulation() {
     setIsBusy(true);
 
     try {
+      await ensureRavenGapSelected();
       const data = await stepSimulation();
-      applyState(data);
+      const appliedState = await applyRavenResponse(data, "simulate/step");
 
-      if (data?.meta?.status === "complete") {
+      if (appliedState?.meta?.status === "complete") {
         setIsAutoRunning(false);
       }
 
-      return data;
+      return appliedState;
     } finally {
       stepInFlightRef.current = false;
       setIsBusy(false);
@@ -131,9 +192,45 @@ export function useSimulation() {
 
     try {
       setIsAutoRunning(false);
+      await ensureRavenGapSelected();
       const data = await resetSimulation();
-      applyState(data);
-      return data;
+      return applyRavenResponse(data, "reset");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const setCompressionEnabled = async (enabled: boolean) => {
+    setIsBusy(true);
+
+    try {
+      await ensureRavenGapSelected();
+      const data = await apiSetCompressionEnabled(enabled);
+      return applyRavenResponse(data, "compression/toggle");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const submitVoiceReport = async (audioId?: string) => {
+    setIsBusy(true);
+
+    try {
+      await ensureRavenGapSelected();
+      const data = await apiSubmitVoiceReport(audioId);
+      return applyRavenResponse(data, "voice/report");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const setCommsDegraded = async (degraded: boolean, kbps?: number) => {
+    setIsBusy(true);
+
+    try {
+      await ensureRavenGapSelected();
+      const data = await apiSetCommsDegraded(degraded, kbps);
+      return applyRavenResponse(data, "comms/degrade");
     } finally {
       setIsBusy(false);
     }
@@ -145,7 +242,8 @@ export function useSimulation() {
       return;
     }
 
-    const currentStatus = stateRef.current?.meta?.status;
+    const ravenState = await ensureRavenGapSelected();
+    const currentStatus = ravenState?.meta?.status;
 
     if (currentStatus === "running") {
       setIsAutoRunning(true);
@@ -160,7 +258,16 @@ export function useSimulation() {
       setIsBusy(true);
 
       try {
-        await Promise.all([refresh(), loadScenarios()]);
+        await loadScenarios();
+        const stateData = await getState();
+
+        if (stateData?.scenario?.id !== DEFAULT_SCENARIO_ID) {
+          warnNonRavenResponse("boot/state", stateData);
+          await selectAndApplyRavenGap("boot/select");
+          return;
+        }
+
+        applyState(stateData);
       } finally {
         setIsBusy(false);
       }
@@ -188,7 +295,7 @@ export function useSimulation() {
 
   const systemStatus = state?.meta?.status ?? "idle";
   const isSystemRunning = systemStatus === "running";
-  const selectedScenarioId = state?.scenario?.id ?? "coordinated_intrusion";
+  const selectedScenarioId = state?.scenario?.id;
 
   return {
     state,
@@ -199,9 +306,32 @@ export function useSimulation() {
     reset,
     toggleRun,
     changeScenario,
+    setCompressionEnabled,
+    submitVoiceReport,
+    setCommsDegraded,
     isAutoRunning,
     isSystemRunning,
     isBusy,
     refresh,
   };
+}
+
+function demoScenarioId(scenarioId: string) {
+  return scenarioId === DEFAULT_SCENARIO_ID ? scenarioId : DEFAULT_SCENARIO_ID;
+}
+
+function demoScenarios(scenarios: ScenarioOption[] = []) {
+  const ravenScenario = scenarios.find((scenario) => scenario.id === DEFAULT_SCENARIO_ID);
+  return [ravenScenario || DEFAULT_SCENARIO];
+}
+
+function isRavenGapState(state: SimulationState) {
+  return state?.scenario?.id === DEFAULT_SCENARIO_ID;
+}
+
+function warnNonRavenResponse(source: string, state: SimulationState) {
+  console.warn(
+    `[Raven Gap demo] ${source} returned non-Raven state:`,
+    state?.scenario?.id || "missing scenario"
+  );
 }

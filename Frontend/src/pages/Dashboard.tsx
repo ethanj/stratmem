@@ -1,4 +1,11 @@
-// pages/Dashboard.tsx
+/**
+ * Primary command dashboard for the Sentinel Forge frontend.
+ *
+ * The dashboard keeps the existing replay controls, event stream, correlation,
+ * SITREP/incident, and map surfaces intact while wiring the Raven Gap v3
+ * compression proof into visible UI. Backend state stays authoritative; this
+ * page only passes contract slices and hook actions into presentation panels.
+ */
 import { useState } from "react";
 
 import TopBar from "../components/TopBar";
@@ -8,6 +15,7 @@ import CorrelationScore from "../components/CorrelationScore";
 import IncidentCard from "../components/IncidentCard";
 import MapView from "../components/MapView";
 import AssetStatus from "../components/AssetStatus";
+import VoiceReportPanel from "../components/VoiceReportPanel";
 
 import { useSimulation } from "../hooks/useSimulation";
 
@@ -26,6 +34,8 @@ export default function Dashboard() {
     reset,
     toggleRun,
     changeScenario,
+    setCompressionEnabled,
+    submitVoiceReport,
     isAutoRunning,
     isSystemRunning,
     isBusy,
@@ -98,11 +108,20 @@ export default function Dashboard() {
         </section>
 
         <section className="dashboard-area map-area">
-          <MapView map={state.map_state} />
+          <MapView map={state.map_state} scenarioId={selectedScenarioId} />
         </section>
 
         <section className="dashboard-area asset-area">
-          <AssetStatus assets={state.map_state?.assets} />
+          <div className="asset-stack">
+            <VoiceReportPanel
+              voiceReport={state.voice_report}
+              comms={state.comms}
+              onSubmit={submitVoiceReport}
+              onCompressionChange={setCompressionEnabled}
+            />
+
+            <AssetStatus assets={state.map_state?.assets} />
+          </div>
         </section>
       </main>
     </div>
