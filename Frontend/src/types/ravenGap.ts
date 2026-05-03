@@ -123,7 +123,7 @@ export interface CommsDegradeRequest {
 
 /**
  * The slice of `state` populated by Raven Gap. Components consume these via
- * `useSimulation().state` (after `mergeRavenGapStub` fills missing keys).
+ * `useSimulation().state` after backend Raven Gap selection is applied.
  */
 export interface RavenGapStateSlice {
   mesh?: Mesh;
@@ -188,6 +188,14 @@ export interface RiskZone extends LatLon {
   radius_m: number;
 }
 
+export interface Route {
+  id: string;
+  label?: string;
+  name?: string;
+  status?: string;
+  points: LatLon[];
+}
+
 export interface MapState {
   mgrs_grid_anchor?: MgrsAnchor;
   phase_line?: PhaseLine[];
@@ -196,7 +204,7 @@ export interface MapState {
   friendly_markers?: FriendlyMarker[];
   contact_markers?: ContactMarker[];
   risk_zones?: RiskZone[];
-  routes?: unknown[];
+  routes?: Route[];
   /** Existing Sentinel Forge fields preserved for legacy paths. */
   tracks?: unknown[];
   threat_paths?: unknown[];

@@ -11,6 +11,7 @@ import MeshTree from "../components/MeshTree";
 import CompactionTimeline from "../components/CompactionTimeline";
 import SitrepDeltaPanel from "../components/SitrepDeltaPanel";
 import EvidenceDrawer from "../components/EvidenceDrawer";
+import VoiceReportPanel from "../components/VoiceReportPanel";
 
 import { useSimulation } from "../hooks/useSimulation";
 
@@ -39,6 +40,8 @@ export default function Dashboard() {
     toggleRun,
     changeScenario,
     toggleDegraded,
+    setCompressionEnabled,
+    submitVoiceReport,
     isAutoRunning,
     isSystemRunning,
     isBusy,
@@ -148,7 +151,15 @@ export default function Dashboard() {
         </section>
 
         <section className="dashboard-area aside-area">
-          <AssetStatus assets={state.map_state?.assets} />
+          <div className="aside-stack">
+            <VoiceReportPanel
+              voiceReport={state.voice_report}
+              comms={state.comms}
+              onSubmit={submitVoiceReport}
+              onCompressionChange={setCompressionEnabled}
+            />
+            <AssetStatus assets={state.map_state?.assets} />
+          </div>
         </section>
       </main>
 

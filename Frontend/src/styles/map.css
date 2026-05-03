@@ -320,6 +320,32 @@
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  opacity: 1;
+  transition:
+    opacity 220ms ease,
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    background 260ms ease;
+}
+
+.geo-marker.overlay-new {
+  animation: markerFadeIn 420ms ease-out;
+}
+
+.geo-marker.overlay-active::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  pointer-events: none;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  opacity: 0;
+  animation: markerPulse 1.45s ease-out;
+  z-index: 4;
+}
+
+.geo-marker.overlay-removing {
+  opacity: 0;
 }
 
 .geo-marker.friendly {
@@ -512,6 +538,30 @@
     box-shadow:
       inset 0 0 46px rgba(255, 64, 64, 0.3),
       0 0 38px rgba(255, 64, 64, 0.28);
+  }
+}
+
+@keyframes markerFadeIn {
+  from {
+    opacity: 0;
+    filter: brightness(1.65);
+  }
+
+  to {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes markerPulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.86);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
   }
 }
 
@@ -878,6 +928,8 @@
 @media (prefers-reduced-motion: reduce) {
   .map-scan-overlay,
   .real-map-shell.expanded::after,
+  .geo-marker.overlay-new,
+  .geo-marker.overlay-active::after,
   .geo-marker.sector.active,
   .geo-marker.threat.active .geo-marker-icon,
   .geo-marker.threat-zone.active .geo-marker-icon {

@@ -4,8 +4,9 @@
  * Renders the geographic command picture from `state.map_state` per
  * docs/THEPLAN.md: NAIs (polygons), phase line, checkpoints, friendly
  * markers, contact markers (with confidence shading), risk zones (radius
- * circles), and an optional MGRS grid label. All coordinates come from
- * `state.map_state`; nothing is hardcoded.
+ * circles), routes, and an optional MGRS grid label. Backend contract fields
+ * drive rendering; an empty Raven contract gets the documented static Raven
+ * baseline so the COP is visible before source reports roll.
  *
  * Two render modes:
  * - Default: dark CARTO raster tiles + maplibre-gl pitched view.
@@ -27,11 +28,85 @@ import type {
   NamedAreaOfInterest,
   PhaseLine,
   RiskZone,
+  Route,
 } from "../types/ravenGap";
 
-const DEFAULT_CENTER: [number, number] = [-115.452, 36.124];
+const DEFAULT_CENTER: [number, number] = [-118.6818, 37.4755];
 const DEFAULT_ZOOM = 13.4;
 const EXPANDED_ZOOM = 14.0;
+const MARKER_EXIT_MS = 220;
+const RAVEN_BASELINE_MAP: MapState = {
+  mgrs_grid_anchor: { easting: 42820, northing: 49210, zone: "11S LV" },
+  phase_line: [
+    {
+      id: "pl_raven",
+      label: "PL Raven",
+      points: [
+        { lat: 37.4662, lon: -118.6788 },
+        { lat: 37.4825, lon: -118.6762 },
+      ],
+    },
+  ],
+  checkpoints: [
+    { id: "cp1", label: "CP1", lat: 37.4718, lon: -118.6821 },
+    { id: "cp2", label: "CP2", lat: 37.4685, lon: -118.6886 },
+    { id: "cp3", label: "CP3", lat: 37.4815, lon: -118.6698 },
+  ],
+  nais: [
+    squareArea("nai_1", "NAI-1 North Draw", 37.482, -118.684),
+    squareArea("nai_2", "NAI-2 East Ridge", 37.4792, -118.6738),
+    squareArea("nai_3", "NAI-3 South Spur", 37.4669, -118.6775),
+  ],
+  friendly_markers: [
+    { id: "plt-raven", label: "PL Raven", lat: 37.4755, lon: -118.6818, kind: "command" },
+    { id: "sqd-1", label: "1st", lat: 37.4718, lon: -118.6821, kind: "infantry" },
+    { id: "sqd-2", label: "2nd", lat: 37.4787, lon: -118.6749, kind: "infantry" },
+    { id: "sqd-3", label: "3rd", lat: 37.4669, lon: -118.6775, kind: "infantry" },
+    { id: "wpn", label: "WPN", lat: 37.4762, lon: -118.6858, kind: "weapons" },
+    { id: "jltv-1", label: "JLTV", lat: 37.4685, lon: -118.6886, kind: "vehicle" },
+    { id: "uas-2", label: "Raven-2", lat: 37.4729, lon: -118.6798, kind: "uas_team" },
+    { id: "sens-1", label: "OP/LP", lat: 37.4796, lon: -118.6715, kind: "sensor" },
+  ],
+  contact_markers: [],
+  risk_zones: [
+    { id: "rz_nai_2", label: "NAI-2 contact risk", lat: 37.4792, lon: -118.6738, radius_m: 520 },
+    { id: "rz_cp2_delay", label: "CP2 mobility constraint", lat: 37.4685, lon: -118.6886, radius_m: 260 },
+  ],
+  routes: [
+    {
+      id: "route-finch",
+      name: "Route Finch",
+      status: "amber",
+      points: [
+        { lat: 37.4685, lon: -118.6886 },
+        { lat: 37.4718, lon: -118.6821 },
+        { lat: 37.4768, lon: -118.6808 },
+        { lat: 37.4815, lon: -118.6698 },
+      ],
+    },
+    {
+      id: "route-support",
+      name: "Support Route",
+      status: "delayed",
+      points: [
+        { lat: 37.4669, lon: -118.6775 },
+        { lat: 37.4685, lon: -118.6886 },
+        { lat: 37.4762, lon: -118.6858 },
+      ],
+    },
+  ],
+};
+
+const RAVEN_CONTRACT_FIELDS = [
+  "mgrs_grid_anchor",
+  "phase_line",
+  "checkpoints",
+  "nais",
+  "friendly_markers",
+  "contact_markers",
+  "risk_zones",
+  "routes",
+] as const;
 
 const DARK_RASTER_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -81,11 +156,12 @@ export default function MapView({ map }: MapViewProps) {
   const [expanded, setExpanded] = useState(false);
   const [staticMode, setStaticMode] = useState(false);
 
-  const mgrsZone = map?.mgrs_grid_anchor?.zone;
-  const naiCount = map?.nais?.length ?? 0;
-  const friendlyCount = map?.friendly_markers?.length ?? 0;
-  const contactCount = map?.contact_markers?.length ?? 0;
-  const riskLevel = map?.risk_level || (contactCount > 0 ? "elevated" : "normal");
+  const displayMap = useMemo(() => normalizeRavenMap(map), [map]);
+  const mgrsZone = displayMap?.mgrs_grid_anchor?.zone;
+  const naiCount = displayMap?.nais?.length ?? 0;
+  const friendlyCount = displayMap?.friendly_markers?.length ?? 0;
+  const contactCount = displayMap?.contact_markers?.length ?? 0;
+  const riskLevel = displayMap?.risk_level || (contactCount > 0 ? "elevated" : "normal");
 
   return (
     <>
@@ -109,7 +185,7 @@ export default function MapView({ map }: MapViewProps) {
         </div>
 
         <div className="real-map-shell">
-          <MapCanvas map={map} staticMode={staticMode} onTilesFailed={() => setStaticMode(true)} />
+          <MapCanvas map={displayMap} staticMode={staticMode} onTilesFailed={() => setStaticMode(true)} />
           <MapOverlays
             naiCount={naiCount}
             friendlyCount={friendlyCount}
@@ -157,7 +233,7 @@ export default function MapView({ map }: MapViewProps) {
             <div className="map-modal-body">
               <div className="real-map-shell expanded">
                 <MapCanvas
-                  map={map}
+                  map={displayMap}
                   staticMode={staticMode}
                   onTilesFailed={() => setStaticMode(true)}
                   expanded
@@ -184,15 +260,38 @@ type MapCanvasProps = {
   expanded?: boolean;
 };
 
+type MarkerDescriptor = {
+  id: string;
+  className: string;
+  icon: string;
+  label: string;
+  point: LatLon;
+};
+
+type DataOverlaySnapshot = {
+  phaseLineIds: Set<string>;
+  routeIds: Set<string>;
+  riskZoneIds: Set<string>;
+};
+
 function MapCanvas({ map, staticMode, onTilesFailed, expanded = false }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const markerRefs = useRef<maplibregl.Marker[]>([]);
+  const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const seenMarkerIdsRef = useRef<Set<string>>(new Set());
+  const dataOverlaySnapshotRef = useRef<DataOverlaySnapshot>(emptyDataOverlaySnapshot());
+  const mapDataRef = useRef<MapState | null | undefined>(map);
+  const onTilesFailedRef = useRef(onTilesFailed);
   const mapLoadedRef = useRef(false);
 
   const center = useMemo<[number, number]>(() => {
     return computeCenter(map) ?? DEFAULT_CENTER;
   }, [map]);
+
+  useEffect(() => {
+    mapDataRef.current = map;
+    onTilesFailedRef.current = onTilesFailed;
+  }, [map, onTilesFailed]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -220,36 +319,37 @@ function MapCanvas({ map, staticMode, onTilesFailed, expanded = false }: MapCanv
       // Tile fetch failures bubble through here; switch to static fallback.
       const err = e?.error as { status?: number; url?: string } | undefined;
       if (err?.url && err.url.includes("basemaps.cartocdn.com")) {
-        onTilesFailed();
+        onTilesFailedRef.current();
       }
     });
 
     instance.on("load", () => {
       mapLoadedRef.current = true;
-      addRavenGapLayers(instance, map);
-      markerRefs.current.forEach((m) => m.remove());
-      markerRefs.current = buildRavenGapMarkers(instance, map);
+      addRavenGapLayers(instance, mapDataRef.current);
+      reconcileRavenGapMarkers(instance, mapDataRef.current, markerRefs.current, seenMarkerIdsRef.current, false);
+      dataOverlaySnapshotRef.current = dataOverlaySnapshot(mapDataRef.current);
       window.setTimeout(() => instance.resize(), 50);
     });
 
     mapRef.current = instance;
 
     return () => {
-      markerRefs.current.forEach((m) => m.remove());
-      markerRefs.current = [];
+      markerRefs.current.forEach((marker) => marker.remove());
+      markerRefs.current.clear();
       mapLoadedRef.current = false;
       instance.remove();
       mapRef.current = null;
     };
-  }, [expanded, staticMode, center, map, onTilesFailed]);
+  }, [expanded, staticMode]);
 
   useEffect(() => {
     const instance = mapRef.current;
     if (!instance || !mapLoadedRef.current || !instance.isStyleLoaded()) return;
 
     updateRavenGapData(instance, map);
-    markerRefs.current.forEach((m) => m.remove());
-    markerRefs.current = buildRavenGapMarkers(instance, map);
+    pulseChangedDataLayers(instance, dataOverlaySnapshotRef.current, map);
+    dataOverlaySnapshotRef.current = dataOverlaySnapshot(map);
+    reconcileRavenGapMarkers(instance, map, markerRefs.current, seenMarkerIdsRef.current, true);
   }, [map]);
 
   return <div ref={containerRef} className="real-map" />;
@@ -272,6 +372,7 @@ function MapOverlays({ naiCount, friendlyCount, contactCount }: MapOverlaysProps
         <span><b className="red" /> CONTACT</span>
         <span><b className="orange-line" /> PHASE LINE</span>
         <span><b className="cyan-line" /> NAI</span>
+        <span><b className="cyan-line" /> ROUTE</span>
         <span><b className="gray" /> CHECKPOINT</span>
       </div>
 
@@ -328,6 +429,25 @@ function addRavenGapLayers(instance: maplibregl.Map, map?: MapState | null) {
     });
   }
 
+  // Routes
+  if (!instance.getSource("routes")) {
+    instance.addSource("routes", {
+      type: "geojson",
+      data: routeCollection(map?.routes ?? []),
+    });
+    instance.addLayer({
+      id: "routes-stroke",
+      type: "line",
+      source: "routes",
+      paint: {
+        "line-color": "#22d3ee",
+        "line-width": 2,
+        "line-dasharray": [3, 2],
+        "line-opacity": 0.78,
+      },
+    });
+  }
+
   // Risk zones (rendered as filled polygons approximating circles)
   if (!instance.getSource("risk-zones")) {
     instance.addSource("risk-zones", {
@@ -352,74 +472,220 @@ function addRavenGapLayers(instance: maplibregl.Map, map?: MapState | null) {
 function updateRavenGapData(instance: maplibregl.Map, map?: MapState | null) {
   const naiSource = instance.getSource("nai-polygons") as maplibregl.GeoJSONSource | undefined;
   const phaseSource = instance.getSource("phase-lines") as maplibregl.GeoJSONSource | undefined;
+  const routeSource = instance.getSource("routes") as maplibregl.GeoJSONSource | undefined;
   const riskSource = instance.getSource("risk-zones") as maplibregl.GeoJSONSource | undefined;
 
   if (naiSource) naiSource.setData(naiCollection(map?.nais ?? []));
   if (phaseSource) phaseSource.setData(phaseLineCollection(map?.phase_line ?? []));
+  if (routeSource) routeSource.setData(routeCollection(map?.routes ?? []));
   if (riskSource) riskSource.setData(riskZoneCollection(map?.risk_zones ?? []));
 }
 
-function buildRavenGapMarkers(instance: maplibregl.Map, map?: MapState | null): maplibregl.Marker[] {
-  const markers: maplibregl.Marker[] = [];
+function pulseChangedDataLayers(
+  instance: maplibregl.Map,
+  previous: DataOverlaySnapshot,
+  map?: MapState | null,
+) {
+  const next = dataOverlaySnapshot(map);
 
-  // Friendly markers
+  if (hasNewId(next.phaseLineIds, previous.phaseLineIds)) {
+    pulseLineLayer(instance, "phase-line-stroke", 3.4, 2.4);
+  }
+
+  if (hasNewId(next.routeIds, previous.routeIds)) {
+    pulseLineLayer(instance, "routes-stroke", 3.2, 2);
+  }
+
+  if (hasNewId(next.riskZoneIds, previous.riskZoneIds)) {
+    pulseRiskLayer(instance);
+  }
+}
+
+function dataOverlaySnapshot(map?: MapState | null): DataOverlaySnapshot {
+  return {
+    phaseLineIds: idsFrom(map?.phase_line),
+    routeIds: idsFrom(map?.routes),
+    riskZoneIds: idsFrom(map?.risk_zones),
+  };
+}
+
+function emptyDataOverlaySnapshot(): DataOverlaySnapshot {
+  return {
+    phaseLineIds: new Set(),
+    routeIds: new Set(),
+    riskZoneIds: new Set(),
+  };
+}
+
+function idsFrom(items: Array<{ id: string }> | undefined) {
+  return new Set((items ?? []).map((item) => item.id));
+}
+
+function hasNewId(nextIds: Set<string>, previousIds: Set<string>) {
+  for (const id of nextIds) {
+    if (!previousIds.has(id)) return true;
+  }
+
+  return false;
+}
+
+function pulseLineLayer(
+  instance: maplibregl.Map,
+  layerId: string,
+  brightWidth: number,
+  normalWidth: number,
+) {
+  if (!instance.getLayer(layerId)) return;
+  instance.setPaintProperty(layerId, "line-width", brightWidth);
+  window.setTimeout(() => {
+    if (instance.getLayer(layerId)) {
+      instance.setPaintProperty(layerId, "line-width", normalWidth);
+    }
+  }, 520);
+}
+
+function pulseRiskLayer(instance: maplibregl.Map) {
+  if (!instance.getLayer("risk-zone-fill")) return;
+  instance.setPaintProperty("risk-zone-fill", "fill-opacity", 0.2);
+  window.setTimeout(() => {
+    if (instance.getLayer("risk-zone-fill")) {
+      instance.setPaintProperty("risk-zone-fill", "fill-opacity", 0.12);
+    }
+  }, 720);
+}
+
+function reconcileRavenGapMarkers(
+  instance: maplibregl.Map,
+  map: MapState | null | undefined,
+  markerRefs: Map<string, maplibregl.Marker>,
+  seenMarkerIds: Set<string>,
+  animateNew: boolean,
+) {
+  const descriptors = ravenGapMarkerDescriptors(map);
+  const nextIds = new Set(descriptors.map((descriptor) => descriptor.id));
+
+  markerRefs.forEach((marker, markerId) => {
+    if (nextIds.has(markerId)) return;
+    removeMarker(marker, markerRefs, markerId);
+  });
+
+  for (const descriptor of descriptors) {
+    const existingMarker = markerRefs.get(descriptor.id);
+
+    if (existingMarker) {
+      updateMarkerElement(existingMarker.getElement(), descriptor, false);
+      existingMarker.setLngLat([descriptor.point.lon, descriptor.point.lat]);
+      continue;
+    }
+
+    const isNewMarker = animateNew && !seenMarkerIds.has(descriptor.id);
+    const marker = makeMarker(descriptor, isNewMarker)
+      .setLngLat([descriptor.point.lon, descriptor.point.lat])
+      .addTo(instance);
+
+    markerRefs.set(descriptor.id, marker);
+    seenMarkerIds.add(descriptor.id);
+  }
+}
+
+function ravenGapMarkerDescriptors(map?: MapState | null): MarkerDescriptor[] {
+  const markers: MarkerDescriptor[] = [];
+
   for (const f of map?.friendly_markers ?? []) {
-    markers.push(
-      makeMarker(`friendly ${f.kind ?? ""}`.trim(), iconForFriendly(f.kind), f.label)
-        .setLngLat([f.lon, f.lat])
-        .addTo(instance),
-    );
+    markers.push({
+      id: `friendly:${f.id}`,
+      className: `friendly ${f.kind ?? ""}`.trim(),
+      icon: iconForFriendly(f.kind),
+      label: f.label,
+      point: f,
+    });
   }
 
-  // Checkpoints
   for (const cp of map?.checkpoints ?? []) {
-    markers.push(
-      makeMarker("checkpoint", "◆", cp.label)
-        .setLngLat([cp.lon, cp.lat])
-        .addTo(instance),
-    );
+    markers.push({
+      id: `checkpoint:${cp.id}`,
+      className: "checkpoint",
+      icon: "◆",
+      label: cp.label,
+      point: cp,
+    });
   }
 
-  // Contact markers — confidence drives shading
   for (const c of map?.contact_markers ?? []) {
-    const confidenceClass = `contact ${normalizeConfidence(c.confidence)}`;
-    markers.push(
-      makeMarker(confidenceClass, "✕", c.label || "?")
-        .setLngLat([c.lon, c.lat])
-        .addTo(instance),
-    );
+    markers.push({
+      id: `contact:${c.id}`,
+      className: `contact ${normalizeConfidence(c.confidence)}`,
+      icon: "✕",
+      label: contactLabel(c),
+      point: c,
+    });
   }
 
-  // NAI label markers (anchor on polygon centroid)
   for (const nai of map?.nais ?? []) {
-    const c = polygonCentroid(nai.polygon);
-    if (!c) continue;
-    markers.push(
-      makeMarker("nai-label", "", nai.label)
-        .setLngLat([c.lon, c.lat])
-        .addTo(instance),
-    );
+    const centroid = polygonCentroid(nai.polygon);
+    if (!centroid) continue;
+    markers.push({
+      id: `nai:${nai.id}`,
+      className: "nai-label",
+      icon: "",
+      label: nai.label,
+      point: centroid,
+    });
   }
 
   return markers;
 }
 
-function makeMarker(kind: string, icon: string, label: string) {
+function makeMarker(descriptor: MarkerDescriptor, isNewMarker: boolean) {
   const element = document.createElement("div");
-  element.className = `geo-marker ${kind}`;
+  updateMarkerElement(element, descriptor, isNewMarker);
 
-  if (icon) {
-    const iconNode = document.createElement("span");
+  return new maplibregl.Marker({ element, anchor: "center" });
+}
+
+function updateMarkerElement(
+  element: HTMLElement,
+  descriptor: MarkerDescriptor,
+  isNewMarker: boolean,
+) {
+  element.className = [
+    "geo-marker",
+    descriptor.className,
+    isNewMarker ? "overlay-new overlay-active" : "",
+  ].filter(Boolean).join(" ");
+  element.dataset.overlayId = descriptor.id;
+
+  let iconNode = element.querySelector<HTMLSpanElement>(".geo-marker-icon");
+  if (descriptor.icon && !iconNode) {
+    iconNode = document.createElement("span");
     iconNode.className = "geo-marker-icon";
-    iconNode.textContent = icon;
     element.appendChild(iconNode);
   }
 
-  const labelNode = document.createElement("span");
-  labelNode.textContent = label;
-  element.appendChild(labelNode);
+  if (iconNode) {
+    iconNode.textContent = descriptor.icon;
+    iconNode.hidden = !descriptor.icon;
+  }
 
-  return new maplibregl.Marker({ element, anchor: "center" });
+  let labelNode = element.querySelector<HTMLSpanElement>(".geo-marker-label");
+  if (!labelNode) {
+    labelNode = document.createElement("span");
+    labelNode.className = "geo-marker-label";
+    element.appendChild(labelNode);
+  }
+
+  labelNode.textContent = descriptor.label;
+}
+
+function removeMarker(
+  marker: maplibregl.Marker,
+  markerRefs: Map<string, maplibregl.Marker>,
+  markerId: string,
+) {
+  const element = marker.getElement();
+  element.classList.add("overlay-removing");
+  markerRefs.delete(markerId);
+  window.setTimeout(() => marker.remove(), MARKER_EXIT_MS);
 }
 
 function iconForFriendly(kind?: string): string {
@@ -439,11 +705,76 @@ function iconForFriendly(kind?: string): string {
   }
 }
 
+function contactLabel(contact: { id: string; label?: string }) {
+  const label = String(contact.label || "").trim();
+
+  if (!label || label === "?") {
+    return contact.id;
+  }
+
+  return `${label} ${contact.id}`;
+}
+
 function normalizeConfidence(c: string | undefined): string {
   if (!c) return "suspected";
   const v = c.toLowerCase();
   if (v === "confirmed" || v === "suspected" || v === "lost") return v;
   return "suspected";
+}
+
+function normalizeRavenMap(map?: MapState | null): MapState | null {
+  if (!map || !hasRavenContractFields(map)) {
+    return map ?? null;
+  }
+
+  return {
+    ...map,
+    mgrs_grid_anchor: hasUsableAnchor(map.mgrs_grid_anchor)
+      ? map.mgrs_grid_anchor
+      : RAVEN_BASELINE_MAP.mgrs_grid_anchor,
+    phase_line: arrayOrBaseline(map.phase_line, RAVEN_BASELINE_MAP.phase_line),
+    checkpoints: arrayOrBaseline(map.checkpoints, RAVEN_BASELINE_MAP.checkpoints),
+    nais: arrayOrBaseline(map.nais, RAVEN_BASELINE_MAP.nais),
+    friendly_markers: arrayOrBaseline(
+      map.friendly_markers,
+      RAVEN_BASELINE_MAP.friendly_markers,
+    ),
+    contact_markers: Array.isArray(map.contact_markers) ? map.contact_markers : [],
+    risk_zones: arrayOrBaseline(map.risk_zones, RAVEN_BASELINE_MAP.risk_zones),
+    routes: arrayOrBaseline(map.routes, RAVEN_BASELINE_MAP.routes),
+  };
+}
+
+function hasRavenContractFields(map: MapState) {
+  return RAVEN_CONTRACT_FIELDS.some((field) => field in map);
+}
+
+function hasUsableAnchor(anchor: MapState["mgrs_grid_anchor"]) {
+  return Boolean(anchor && typeof anchor === "object" && anchor.zone);
+}
+
+function arrayOrBaseline<T>(value: T[] | undefined, fallback: T[] | undefined) {
+  return Array.isArray(value) && value.length > 0 ? value : fallback ?? [];
+}
+
+function squareArea(
+  id: string,
+  label: string,
+  lat: number,
+  lon: number,
+): NamedAreaOfInterest {
+  const delta = 0.002;
+
+  return {
+    id,
+    label,
+    polygon: [
+      { lat: lat - delta, lon: lon - delta },
+      { lat: lat - delta, lon: lon + delta },
+      { lat: lat + delta, lon: lon + delta },
+      { lat: lat + delta, lon: lon - delta },
+    ],
+  };
 }
 
 // --- GeoJSON helpers ---------------------------------------------------------
@@ -471,6 +802,24 @@ function phaseLineCollection(lines: PhaseLine[]): FeatureCollection<LineString> 
       geometry: {
         type: "LineString",
         coordinates: pl.points.map((p) => [p.lon, p.lat] as [number, number]),
+      },
+    })),
+  };
+}
+
+function routeCollection(routes: Route[]): FeatureCollection<LineString> {
+  return {
+    type: "FeatureCollection",
+    features: routes.map((route): Feature<LineString> => ({
+      type: "Feature",
+      properties: {
+        id: route.id,
+        label: route.label || route.name,
+        status: route.status,
+      },
+      geometry: {
+        type: "LineString",
+        coordinates: route.points.map((p) => [p.lon, p.lat] as [number, number]),
       },
     })),
   };
@@ -527,4 +876,3 @@ function computeCenter(map?: MapState | null): [number, number] | null {
   }
   return [lon / all.length, lat / all.length];
 }
-
