@@ -6,7 +6,7 @@ import type { Comms, Compaction, RavenGapEvent } from "../types/ravenGap";
 
 type MaybePromise<T = unknown> = T | Promise<T>;
 
-export type ScenarioOption = {
+ type ScenarioOption = {
   id: string;
   name: string;
   description?: string;
