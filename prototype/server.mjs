@@ -55,6 +55,35 @@ function textResponse(res, status, body, contentType = "text/plain; charset=utf-
   res.end(body);
 }
 
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (isAllowedCorsOrigin(origin)) {
+    res.setHeader("access-control-allow-origin", origin);
+    res.setHeader("vary", "origin");
+  }
+  res.setHeader("access-control-allow-methods", "GET,POST,DELETE,OPTIONS");
+  res.setHeader("access-control-allow-headers", "content-type");
+  res.setHeader("access-control-max-age", "600");
+}
+
+function isAllowedCorsOrigin(origin) {
+  if (!origin) return false;
+  try {
+    const { protocol, hostname } = new URL(origin);
+    if (!["http:", "https:"].includes(protocol)) return false;
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function readBody(req, maxBytes = maxJsonBytes) {
   const chunks = [];
   let totalBytes = 0;
@@ -354,6 +383,13 @@ async function serveStatic(req, res, url) {
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  applyCors(req, res);
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   try {
     if (url.pathname === "/api/signal") {
       await handleSignal(req, res, url);

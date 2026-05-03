@@ -15,6 +15,7 @@ import VoiceReportPanel from "../components/VoiceReportPanel";
 import TacticalEntityDrawer from "../components/map/TacticalEntityDrawer";
 
 import { useSimulation } from "../hooks/useSimulation";
+import { useS2Receiver } from "../hooks/useS2Receiver";
 import type {
   Compaction,
   MapState,
@@ -90,6 +91,10 @@ export default function Dashboard() {
   const [openOverlay, setOpenOverlay] = useState<OverlayKey | null>(null);
   const refreshRef = useRef(refresh);
   const receiverTriggerIdsRef = useRef<Set<string>>(new Set());
+  const s2Receiver = useS2Receiver({
+    enabled: !isOffline,
+    onDecoded: async () => { await refreshRef.current(); },
+  });
   const receiverEvents = (state as { receiver_events?: ReceiverDecodeEvent[] }).receiver_events;
   const entities = (state.map_state?.entities || []) as TacticalEntity[];
   const selectedEntity = selectedEntityId
@@ -203,6 +208,7 @@ export default function Dashboard() {
             expandedEntityIds={expandedEntityIds}
             onSelectEntity={setSelectedEntityId}
           />
+          <S2ReceiverChip receiver={s2Receiver} />
           <OverlayTabs openOverlay={openOverlay} onToggle={setOpenOverlay} />
           <OverlayPanel
             openOverlay={openOverlay}
@@ -270,6 +276,20 @@ function OverlayTabs({
         </button>
       ))}
     </nav>
+  );
+}
+
+function S2ReceiverChip({
+  receiver,
+}: {
+  receiver: ReturnType<typeof useS2Receiver>;
+}) {
+  return (
+    <div className={`s2-receiver-chip ${receiver.status}`}>
+      <span>S2 RX</span>
+      <strong>{receiver.room}</strong>
+      <small>{receiver.status.toUpperCase()} · {receiver.detail}</small>
+    </div>
   );
 }
 

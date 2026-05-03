@@ -129,6 +129,10 @@ export class PeerLink extends EventTarget {
     }
     if (message.kind === "answer" && this.role === "sender") {
       if (!this.isCurrentSession(message)) return;
+      if (this.pc.signalingState !== "have-local-offer") {
+        this.emit("signal", { message: "Ignored duplicate answer" });
+        return;
+      }
       this.emit("signal", { message: "Received answer" });
       await this.pc.setRemoteDescription(message.payload);
       await this.flushRemoteCandidates();
