@@ -37,8 +37,11 @@ DOCUMENTED_MESH_EDGES = [
     {"parent": "PL", "child": "3rd_squad"},
     {"parent": "3rd_squad", "child": "3rd_squad_team_a"},
     {"parent": "PL", "child": "weapons_squad"},
-    {"parent": "PL", "child": "recon_support"},
-    {"parent": "PL", "child": "mobility_support"},
+    {"parent": "weapons_squad", "child": "jltv_v1"},
+    {"parent": "PL", "child": "uas_team"},
+    {"parent": "uas_team", "child": "rq_11"},
+    {"parent": "PL", "child": "op_lp"},
+    {"parent": "op_lp", "child": "sensor_s7"},
 ]
 
 
@@ -89,24 +92,30 @@ def build_default_mesh() -> dict[str, Any]:
         "root": deepcopy(DOCUMENTED_MESH_ROOT),
         "edges": deepcopy(DOCUMENTED_MESH_EDGES),
         "legacy_root": "PLT",
-        "nodes": [
-            {"id": "PLT", "label": "PL Raven", "role": "commander", "echelon": "platoon"},
-            {"id": "SQD-1", "label": "1st Squad", "role": "rifle_squad", "parent": "PLT"},
-            {"id": "SQD-2", "label": "2nd Squad", "role": "rifle_squad", "parent": "PLT"},
-            {"id": "SQD-3", "label": "3rd Squad", "role": "rifle_squad", "parent": "PLT"},
-            {"id": "WPN", "label": "Weapons Squad", "role": "support", "parent": "PLT"},
-            {"id": "UAS-2", "label": "Raven-2", "role": "small_uas", "parent": "PLT"},
-            {"id": "JLTV-1", "label": "JLTV-1", "role": "support_vehicle", "parent": "PLT"},
-            {"id": "SENS-1", "label": "OP/LP Sensor", "role": "sensor", "parent": "PLT"},
-        ],
+        "nodes": {
+            "PL": {"id": "PL", "label": "PL", "role": "commander", "echelon": "platoon"},
+            "1st_squad": {"id": "1st_squad", "label": "1ST SQUAD", "role": "rifle_squad"},
+            "2nd_squad": {"id": "2nd_squad", "label": "2ND SQUAD", "role": "rifle_squad"},
+            "3rd_squad": {"id": "3rd_squad", "label": "3RD SQUAD", "role": "rifle_squad"},
+            "weapons_squad": {"id": "weapons_squad", "label": "WPNS SQUAD", "role": "support"},
+            "uas_team": {"id": "uas_team", "label": "UAS TEAM", "role": "small_uas"},
+            "op_lp": {"id": "op_lp", "label": "OP/LP", "role": "sensor"},
+            "1st_squad_team_a": {"id": "1st_squad_team_a", "label": "1/A"},
+            "1st_squad_team_b": {"id": "1st_squad_team_b", "label": "1/B"},
+            "2nd_squad_team_a": {"id": "2nd_squad_team_a", "label": "2/A"},
+            "2nd_squad_team_b": {"id": "2nd_squad_team_b", "label": "2/B"},
+            "3rd_squad_team_a": {"id": "3rd_squad_team_a", "label": "3/A"},
+            "jltv_v1": {"id": "jltv_v1", "label": "V1 (JLTV)", "kind": "vehicle"},
+            "rq_11": {"id": "rq_11", "label": "RQ-11", "kind": "drone"},
+            "sensor_s7": {"id": "sensor_s7", "label": "S7", "kind": "sensor"},
+        },
         "links": [
-            {"from": "SQD-1", "to": "PLT", "mode": "summary_up"},
-            {"from": "SQD-2", "to": "PLT", "mode": "summary_up"},
-            {"from": "SQD-3", "to": "PLT", "mode": "summary_up"},
-            {"from": "WPN", "to": "PLT", "mode": "summary_up"},
-            {"from": "UAS-2", "to": "PLT", "mode": "summary_up"},
-            {"from": "JLTV-1", "to": "PLT", "mode": "summary_up"},
-            {"from": "SENS-1", "to": "PLT", "mode": "summary_up"},
+            {"from": "1st_squad", "to": "PL", "mode": "summary_up"},
+            {"from": "2nd_squad", "to": "PL", "mode": "summary_up"},
+            {"from": "3rd_squad", "to": "PL", "mode": "summary_up"},
+            {"from": "weapons_squad", "to": "PL", "mode": "summary_up"},
+            {"from": "uas_team", "to": "PL", "mode": "summary_up"},
+            {"from": "op_lp", "to": "PL", "mode": "summary_up"},
         ],
     }
 
@@ -152,12 +161,12 @@ def build_comms_proof(
 
 
 def build_default_comms() -> dict[str, Any]:
-    """Build the default v3 degraded-link comms state."""
+    """Build the default v3 comms state (starts full, user toggles degraded)."""
     return {
-        "degraded": True,
-        "kbps": DEGRADED_COMMS_KBPS,
+        "degraded": False,
+        "kbps": None,
         "window_sec": COMMS_WINDOW_SECONDS,
-        **build_comms_proof(kbps=DEGRADED_COMMS_KBPS),
+        **build_comms_proof(kbps=None),
         "source_detail_level": "full",
         "compression_enabled": False,
     }

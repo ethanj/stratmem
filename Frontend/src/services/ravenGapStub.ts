@@ -458,10 +458,6 @@ export function mergeRavenGapStub<T>(state: T): T {
 
   const next = { ...(state as MergeableState) };
 
-  if (!Array.isArray(next.events) || next.events.length === 0) {
-    next.events = ravenGapStubState.events;
-  }
-
   if (!next.mesh) next.mesh = ravenGapStubState.mesh;
   if (!Array.isArray(next.compactions) || next.compactions.length === 0) {
     next.compactions = ravenGapStubState.compactions;

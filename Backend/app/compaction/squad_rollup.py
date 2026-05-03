@@ -83,6 +83,7 @@ def build_rollup(
     return {
         "id": f"comp_{safe_id(group_id)}_t{t_compacted_sec}",
         "squad_id": group_id,
+        "label": label,
         "summary": summary,
         "source_event_ids": [event.get("id") for event in sorted_events],
         "t_compacted_sec": t_compacted_sec,
@@ -142,16 +143,16 @@ def derived_group_id(event: dict[str, Any]) -> str:
     sender_id = str(metadata.get("sender_id") or "")
     report_type = str(metadata.get("report_type") or "").lower()
 
-    if mesh_node == "SQD-1" or source.startswith("1/"):
+    if mesh_node == "1ST_SQUAD" or source.startswith("1/"):
         return "1st_squad"
-    if mesh_node == "SQD-2" or source.startswith("2/"):
+    if mesh_node == "2ND_SQUAD" or source.startswith("2/"):
         return "2nd_squad"
-    if mesh_node == "SQD-3" or source.startswith("3/"):
+    if mesh_node == "3RD_SQUAD" or source.startswith("3/"):
         return "3rd_squad"
-    if mesh_node in {"WPN", "JLTV-1"} or source in {"WPN", "JLTV-1"}:
+    if mesh_node in {"WEAPONS_SQUAD"} or source in {"WPN", "JLTV-1"}:
         return "support"
     if (
-        mesh_node in {"UAS-2", "SENS-1", "PLT", "PL"}
+        mesh_node in {"UAS_TEAM", "OP_LP", "PL"}
         or source in {"RQ-11", "OP-7", "PL"}
         or report_type in {"uas", "sensor", "sitrep_seed"}
     ):
