@@ -41,12 +41,12 @@ NAIS = [
 
 FRIENDLY_BASE = [
     {"id": "plt-raven", "label": "PL Raven", "unit": "PL Raven", "kind": "command", "location": RAVEN_ANCHOR},
-    {"id": "sqd-1", "label": "1st", "unit": "1st Squad", "kind": "rifle_squad", "location": {"lat": 37.4718, "lon": -118.6821}},
-    {"id": "sqd-2", "label": "2nd", "unit": "2nd Squad", "kind": "rifle_squad", "location": {"lat": 37.4787, "lon": -118.6749}},
-    {"id": "sqd-3", "label": "3rd", "unit": "3rd Squad", "kind": "rifle_squad", "location": {"lat": 37.4669, "lon": -118.6775}},
-    {"id": "wpn", "label": "WPN", "unit": "Weapons Squad", "kind": "support", "location": {"lat": 37.4762, "lon": -118.6858}},
+    {"id": "sqd-1", "label": "1st", "unit": "1st Squad", "kind": "infantry", "location": {"lat": 37.4718, "lon": -118.6821}},
+    {"id": "sqd-2", "label": "2nd", "unit": "2nd Squad", "kind": "infantry", "location": {"lat": 37.4787, "lon": -118.6749}},
+    {"id": "sqd-3", "label": "3rd", "unit": "3rd Squad", "kind": "infantry", "location": {"lat": 37.4669, "lon": -118.6775}},
+    {"id": "wpn", "label": "WPN", "unit": "Weapons Squad", "kind": "weapons", "location": {"lat": 37.4762, "lon": -118.6858}},
     {"id": "jltv-1", "label": "JLTV", "unit": "JLTV-1", "kind": "vehicle", "location": {"lat": 37.4685, "lon": -118.6886}},
-    {"id": "uas-2", "label": "Raven-2", "unit": "Raven-2", "kind": "uas", "location": {"lat": 37.4729, "lon": -118.6798}},
+    {"id": "uas-2", "label": "Raven-2", "unit": "Raven-2", "kind": "uas_team", "location": {"lat": 37.4729, "lon": -118.6798}},
     {"id": "sens-1", "label": "OP/LP", "unit": "OP/LP Sensor", "kind": "sensor", "location": {"lat": 37.4796, "lon": -118.6715}},
 ]
 
