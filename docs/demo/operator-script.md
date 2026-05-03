@@ -1,10 +1,10 @@
 # TacNet Edge Operator Script
 
 **Purpose:** click-by-click run sheet for the person operating the laptop.
-**Presenter source:** `docs/presenter-script-source.md`
-**Presenter speech:** `docs/presenter-script.md`
-**Domain source:** `docs/team-b-domain-pitch-v3.md`
-**Build shell:** `../sentinel-forge/`
+**Presenter source:** `docs/demo/presenter-script-source.md`
+**Presenter speech:** `docs/demo/presenter-script.md`
+**Domain source:** `docs/demo/team-b-domain-pitch-v3.md`
+**Runtime:** main dashboard + second-machine sender prototype
 **Target pitch length:** 3:00
 **Live demo window:** 0:35-2:05
 
@@ -15,38 +15,69 @@
 - No menu diving, scrolling, DevTools, or browser network throttling on stage.
 - One recovery attempt maximum. If the same thing fails twice, switch to backup video.
 - Leave the final command picture on screen after the pitch.
+- The projected screen is the main dashboard only. Keep sender/prototype tabs off projector.
+
+## Live Topology
+
+Main/projected laptop:
+
+- Backend: `http://localhost:8000`
+- Dashboard: `http://localhost:5173?room=0000&signal=http://<sender-ip>:8787`
+- This dashboard is the embedded S2 receiver. No separate receiver tab is needed.
+
+Second/sender laptop:
+
+- Prototype server: `node prototype/server.mjs`
+- Sender page: `http://localhost:8787/?role=sender&room=0000`
+- Role must be `sender`.
+
+Room names are exact and case-sensitive. Use:
+
+```text
+0000
+```
 
 ## Preflight
 
 Before going on stage:
 
 - [ ] Backend running at `http://localhost:8000`.
-- [ ] Frontend loaded at the Vite URL.
+- [ ] Frontend loaded at `http://localhost:5173?room=0000&signal=http://<sender-ip>:8787`.
 - [ ] `/state` returns Raven Gap.
-- [ ] Browser zoom set to 110%.
+- [ ] Browser zoom set to the rehearsed value.
 - [ ] Notifications silenced; dock/menu distractions hidden.
 - [ ] Replay Scenario button visible.
-- [ ] Voice Report panel visible.
-- [ ] Voice report fixture loaded: `raven_gap_salute_1`.
-- [ ] Compression switch starts OFF.
+- [ ] `S2 RX 0000` chip visible on the map.
+- [ ] Sender laptop opened at `http://localhost:8787/?role=sender&room=0000`.
+- [ ] Sender page role is `sender`; room is `0000`.
+- [ ] Sender peer connection tested against dashboard receiver.
+- [ ] Sender sample/manual report tested once, then backend reset.
+- [ ] Squad 1 / 1-A RFL are not red before the live send.
+- [ ] Compression starts OFF.
 - [ ] 3 Kbps meter visible.
-- [ ] Compression OFF voice attempt tested: raw payload blocked.
-- [ ] Compression ON voice attempt tested: SALUTE JSON fits and creates a source event.
+- [ ] Compression OFF attempt tested: raw voice/report blocked or no commander update.
+- [ ] Compression ON attempt tested: second-machine frame received; map/readiness updates.
 - [ ] Map/COP renders MGRS grid, unit icons, NAIs, phase line, checkpoints.
-- [ ] Mesh hierarchy visible.
-- [ ] Compaction timeline visible.
-- [ ] Evidence click tested.
+- [ ] SITREP/evidence path tested.
 - [ ] Backup video open in a hidden window.
+
+Clean reset immediately before stage:
+
+```bash
+curl -X POST http://localhost:8000/reset
+```
+
+Then hard-refresh the dashboard if it still shows a previous received frame.
 
 ## Timeline
 
 | Time | Operator action | Screen target |
 |---|---|---|
 | 0:00-0:35 | Hands off. Presenter frames problem and solution. | Browser ready on starting state. |
-| 0:35 | Click **Replay Scenario**. | Raven Gap COP visible; 3 Kbps meter visible; compression OFF. |
-| 0:40 | Click **Voice Report** with compression OFF. | Raw voice/report bytes exceed budget; status blocked; no feed event. |
-| 0:50 | Toggle **Compression ON**. Click **Voice Report** again. | Transcript and SALUTE JSON appear; JSON bytes fit; source event appears from `1/A`. |
-| 1:02-1:13 | Let replay traffic run. If manual stepping is required, advance through the rehearsed report sequence. | Map markers pulse; source feed fills; mesh leaves activate. |
+| 0:35 | Ensure the Raven Gap COP is centered. If needed, click **Replay Scenario**. | COP visible; `S2 RX 0000` visible; 3 Kbps context visible; compression OFF. |
+| 0:40 | On sender laptop, play/speak the report and send once while compression is OFF. | Projected dashboard should not add a new commander update; if the voice overlay is open, it shows raw blocked. |
+| 0:50 | Turn semantic compression ON using the rehearsed control. Send the same report again from the sender laptop. | Dashboard receives the S2 frame; map/readiness changes; source/voice state reflects received compressed report. |
+| 1:02-1:13 | Keep hands off unless replay requires one click. | Presenter explains that reports arrive; map/readiness/status update stays visible. |
 | 1:13-1:25 | Let compaction update. | Source reports collapse into squad summaries. |
 | 1:25-1:38 | Let commander SITREP appear. | SITREP and delta fill; NAI/risk zone updates. |
 | 1:38 | Click one SITREP evidence line. | Evidence drawer opens, or source rows highlight. |
@@ -62,45 +93,36 @@ Before going on stage:
 | Backend request fails | Refresh once after checking backend terminal; then backup video. | "One moment, restarting the scenario." |
 | Map tiles fail | Use dark vector/static fallback already in panel. | Do not mention tile loading. |
 | Replay button does nothing | Reset scenario and click Replay once. | "Restarting the scenario." |
-| Voice Report button fails | Continue with scripted source reports. | "The same SALUTE extraction feeds the source stream; continuing with the replay." |
-| Compression switch fails | Use visible JSON display if present; otherwise continue to replay traffic. | "The product proof is payload discipline: raw traffic does not fit, structured meaning does." |
+| Sender page does not connect | Confirm sender URL uses `room=0000` and dashboard URL uses `signal=http://<sender-ip>:8787`; refresh sender once. | "The sender is reconnecting to the receiver room." |
+| S2 RX chip stays error/connecting | Confirm prototype server is running on sender laptop and dashboard has the correct `signal=` URL; if still stuck, use backup path. | "For time, we'll use the rehearsed backend path." |
+| OFF send does not show blocked | Continue to ON send; the pitch-critical proof is the received compressed commander update. | "Raw voice is over budget; now watch the semantic frame fit." |
+| ON send does not update map | Use the Voice tab fallback or backup video. | "For time, here's the same received-frame path from rehearsal." |
+| Compression control fails | Use visible receiver/map update if present; otherwise backup video. | "The product proof is payload discipline: raw traffic does not fit, structured meaning does." |
 | Timeline fails but feed works | Continue with map/feed/SITREP. | "The feed is the source edge traffic; the SITREP is the rollup." |
 | Evidence drawer fails | Point to contributing rows if visible; otherwise skip. | "The underlying reports remain attached to the SITREP." |
 | 3 Kbps meter has no effect | Skip to close. | "The product goal is graceful degradation: shrink the information before command disappears." |
 
 ## Voice Fixture
 
-The prerecorded report should match Team B's fixture:
+Presenter line:
 
-> One Alpha reports one dismount moving south near NAI 1, grid 11 Sierra Lima Tango 12345 67890. Unknown unit, light pack, no visible crew-served weapon. Request UAS confirm.
+> Here is one spoken SALUTE report from One Alpha: one dismount moving south near NAI 1, grid 11SLT 12345 67890.
 
-Expected stored transcript:
+Current implemented sender/receiver path uses the P0 9-line/CASEVAC fixture for the readiness map update. If the sender UI offers samples, use the CASEVAC sample for the live transmission unless the code has been updated to the SALUTE fixture.
 
-> One Alpha reports one dismount moving south near NAI 1, grid 11SLT 12345 67890. Unknown unit, light pack, no visible crew-served weapon. Request UAS confirm.
+Expected operational effect after successful ON send:
 
-Expected compressed event:
-
-```json
-{
-  "type": "salute",
-  "source": "1/A",
-  "size": "1 dismount",
-  "activity": "moving south",
-  "location": "11SLT 12345 67890",
-  "unit": "unknown dismount",
-  "time": "T+45",
-  "equipment": "light pack; no visible crew-served weapon",
-  "request": "uas_confirm"
-}
-```
+- S2 receiver decodes a compact binary frame.
+- The commander picture updates.
+- 1st Squad / affected soldier readiness changes after the report.
+- SITREP/evidence path can be shown if time allows.
 
 ## Final Screen
 
 Leave this visible:
 
 - Raven Gap COP with MGRS grid, unit icons, NAIs, phase line, checkpoints, and risk zone.
-- Voice panel showing compression ON and SALUTE JSON if it does not crowd the screen.
-- Mesh hierarchy populated.
-- Compaction timeline populated.
-- Commander SITREP and delta visible.
+- S2 receiver/map update visible.
+- Voice panel hidden unless the presenter asks for byte details.
+- Commander SITREP and delta visible if they do not crowd the map.
 - Evidence drawer open or evidence rows highlighted.

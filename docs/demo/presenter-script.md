@@ -10,11 +10,9 @@
 
 ### 0:00-0:20 - Problem
 
-The cloud is the casualty.
+In Raven Gap, a fictional contested border valley, a battalion commander still has to command through EW pressure: SATCOM denied, tactical radio intermittent, and too much field traffic for the pipe.
 
-In Raven Gap, a fictional contested border valley, a platoon leader still has to command through EW pressure: SATCOM denied, tactical radio intermittent, and too much field traffic for the pipe.
-
-In contested comms, the commander is not starved for information. The commander is starved for usable meaning that can fit through the link.
+In contested comms, the commander is not starved for information. The commander is starved for up to date, usable meaning that can fit through the link.
 
 ### 0:20-0:35 - Solution
 
@@ -23,6 +21,8 @@ TacNet Edge is semantic compression over a tactical mesh.
 Instead of pushing raw voice, chat, telemetry, and repeated reports through a fragile network, TacNet converts field traffic into structured operational meaning before it moves.
 
 Every byte crossing the mesh carries more command value.
+
+We have implemented semantic compression on edge devices using the latest small language models, which allow 25 to 100X compression ratios.
 
 ### 0:35-0:40 - Demo Setup
 
@@ -40,15 +40,20 @@ At 3 Kbps, raw voice does not fit. It misses the budget before it reaches comman
 
 Now we turn semantic compression on and send the same report again.
 
-TacNet extracts the SALUTE fields: size, activity, location, unit, time, equipment, and request. It sends the structured JSON report, not the audio. Same tactical meaning, radically fewer bytes.
+TacNet analyzes the audio and extracts a 9-line report, and then compresses it into a metadata format, and then send it as compressed binary.
+
+Same tactical meaning, radically fewer bytes.
 
 Now it fits, and the report enters the source feed.
 
+
+
 ### 1:02-1:13 - Reports Arrive
 
-The rest of the edge is sending SALUTE reports, ACE/LACE updates, UAS observations, sensor triggers, and PLI updates.
+the reports arrive.
 
-The map is the command picture: MGRS grid, unit icons, NAIs, phase line, checkpoints, and live report updates.
+the map is going to show status readiness for your unit, your sister units, and enemy forces, live updates based on the current operation.
+
 
 ### 1:13-1:25 - Squad Compaction
 
