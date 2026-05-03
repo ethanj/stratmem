@@ -1,71 +1,63 @@
-############################
-# 🐍 Python
-############################
+# macOS / OS files
+.DS_Store
+._*
+Thumbs.db
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Secrets / local env
+.env
+.env.*
+*.key
+*.pem
+!.env.example
+
+# Claude Code (project settings.json is shared, local overrides are not)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Personal notes
+James_notes/
+
+# Local-only docs
+localdocs/
+
+# fallow tool artifacts
+.fallow/
+
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.so
-
-# Virtual environments
-venv/
-.env/
-.env.*
-
-# Python build / packaging
-build/
-dist/
 *.egg-info/
 .eggs/
 
+# Python virtualenvs
+venv/
+.venv/
+
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-############################
-# ⚛️ Node / React (Vite)
-############################
+# Node / React / Vite build output
 node_modules/
 dist/
+build/
 .vite/
+*.tsbuildinfo
 
-# Vite env files
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-############################
-# 🧠 IDE / Editor
-############################
-.vscode/
-.idea/
-
-############################
-# 🖥️ OS Files
-############################
-.DS_Store
-Thumbs.db
-
-############################
-# 🔐 Secrets (CRITICAL)
-############################
-*.env
-*.key
-*.pem
-
-############################
-# 🧪 Testing / Coverage
-############################
+# Testing / Coverage
 .coverage
 htmlcov/
 .pytest_cache/
-
-############################
-# 🧰 Misc
-############################
-*.swp
-*.swo
-# Virtual environments
-.venv/
-Backend/.venv/
-Frontend/node_modules/
