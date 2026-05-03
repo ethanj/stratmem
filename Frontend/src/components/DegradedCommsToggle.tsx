@@ -12,7 +12,7 @@
  */
 
 import { useMemo } from "react";
-import "../styles/degraded.css";
+import "./DegradedCommsToggle.css";
 import type { BandwidthMeter, Comms, Compaction, RavenGapEvent } from "../types/ravenGap";
 
 type Props = {

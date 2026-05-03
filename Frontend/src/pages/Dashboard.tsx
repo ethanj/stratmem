@@ -1,5 +1,6 @@
 // pages/Dashboard.tsx
 import { useState } from "react";
+import "./Dashboard.css";
 
 import TopBar from "../components/TopBar";
 import LogStream from "../components/LogStream";

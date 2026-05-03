@@ -8,6 +8,8 @@
 // delivered. The `kind` keys are display-bound here (Raven Gap doesn't run
 // the cyber correlation engine), so renaming them is a vocab-only change.
 
+import "./SignalBreakdown.css";
+
 type Signal = {
   id: string;
   kind: string;

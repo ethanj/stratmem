@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import "../styles/compaction.css";
+import "./CompactionTimeline.css";
 import type { Compaction, RavenGapEvent } from "../types/ravenGap";
 
 type Props = {

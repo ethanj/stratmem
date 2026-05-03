@@ -1,0 +1,157 @@
+/* base.css — Global resets, CSS variables, font import, scrollbar, body */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap');
+
+:root {
+  /* Backgrounds */
+  --bg: #080c08;
+  --panel: #0d120d;
+  --panel-header: #111811;
+  --border: #2a3a2a;
+  --border-bright: #3a5a3a;
+
+  /* Text */
+  --text: #d4dcd4;
+  --text-bright: #e8f0e8;
+  --muted: #6b7b6b;
+  --label: #8a9a8a;
+
+  /* Accents */
+  --green: #3a5a40;
+  --green-bright: #4a7a50;
+  --amber: #d4a017;
+  --amber-dim: #8a6a10;
+  --red: #cc3333;
+  --red-dim: #882222;
+  --yellow: #ccaa22;
+
+  /* Status (MIL standard) */
+  --status-green: #33aa44;
+  --status-amber: #cc8800;
+  --status-red: #cc2222;
+  --status-blue: #3388bb;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+select {
+  font-family: inherit;
+  font-size: 11px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 4px;
+  outline: none;
+}
+
+select:focus {
+  border-color: var(--border-bright);
+}
+
+ul {
+  list-style: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-bright);
+}
+
+/* Shared panel pattern */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--label);
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-header);
+}
+
+.panel-header h2 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--label);
+}
+
+/* Severity indicators */
+.severity--critical { color: var(--red); border-color: var(--red); }
+.severity--high { color: var(--amber); border-color: var(--amber); }
+.severity--medium { color: var(--yellow); border-color: var(--yellow); }
+.severity--low { color: var(--muted); }
+
+/* Status blink (only functional animation) */
+@keyframes status-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status--alert {
+  animation: status-blink 1.2s ease-in-out infinite;
+}

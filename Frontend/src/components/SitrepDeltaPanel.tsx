@@ -5,7 +5,7 @@
  * since the prior SITREP so the commander knows where to look first.
  */
 
-import "../styles/sitrep-delta.css";
+import "./SitrepDeltaPanel.css";
 import type { SitrepDelta } from "../types/ravenGap";
 
 type Props = {

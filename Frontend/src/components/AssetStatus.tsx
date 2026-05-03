@@ -4,6 +4,8 @@
 // UAS LINK, SITREP FUSION). When backend supplies real assets, those
 // names override the fallback.
 
+import "./AssetStatus.css";
+
 type AssetStatusValue =
   | "operational"
   | "streaming"

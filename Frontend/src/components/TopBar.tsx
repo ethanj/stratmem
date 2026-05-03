@@ -1,6 +1,6 @@
 // components/TopBar.tsx
 import { useEffect, useMemo, useState } from "react";
-import "../styles/topbar.css";
+import "./TopBar.css";
 import DegradedCommsToggle from "./DegradedCommsToggle";
 import type { Comms, Compaction, RavenGapEvent } from "../types/ravenGap";
 

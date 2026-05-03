@@ -1,7 +1,7 @@
 // components/IncidentCard.tsx
 import { useEffect, useMemo, useState } from "react";
 import { analyzeIncident, resolveIncident, updateIncidentAction } from "../services/api";
-import "../styles/incident.css";
+import "./IncidentCard.css";
 import type { EvidenceLine } from "../types/ravenGap";
 
 type AnalystOutput = {

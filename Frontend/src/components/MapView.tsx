@@ -20,7 +20,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import type { Feature, FeatureCollection, LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
-import "../styles/map.css";
+import "./MapView.css";
 import type {
   LatLon,
   MapState,

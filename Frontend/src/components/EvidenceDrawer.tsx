@@ -8,7 +8,7 @@
  */
 
 import { useEffect } from "react";
-import "../styles/evidence.css";
+import "./EvidenceDrawer.css";
 import type { RavenGapEvent } from "../types/ravenGap";
 
 type Props = {

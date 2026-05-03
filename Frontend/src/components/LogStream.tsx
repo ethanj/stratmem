@@ -1,6 +1,6 @@
 // components/LogStream.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import "../styles/logstream.css";
+import "./LogStream.css";
 
 type FeedFilter = "all" | "ops" | "anomalies" | "threats" | "incidents";
 

@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import "../styles/meshtree.css";
+import "./MeshTree.css";
 import type { Mesh, MeshNode, RavenGapEvent } from "../types/ravenGap";
 
 type Props = {

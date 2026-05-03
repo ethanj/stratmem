@@ -1,0 +1,55 @@
+/* SitrepDeltaPanel.css — Delta items, badges */
+
+.sitrep-delta-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sitrep-delta-meta {
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.sitrep-delta-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 6px;
+}
+
+.sitrep-delta-empty {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  padding: 8px;
+}
+
+.sitrep-delta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sitrep-delta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.sitrep-delta-badge {
+  flex-shrink: 0;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 2px;
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--amber);
+  letter-spacing: 0.04em;
+  margin-top: 1px;
+}
+
+.sitrep-delta-text {
+  flex: 1;
+}
