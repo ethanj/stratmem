@@ -28,6 +28,7 @@ James_notes/
 # Local-only docs
 localdocs/
 docs/
+tacnet/
 
 # Local model/runtime dependencies
 localdeps/
